@@ -1,0 +1,72 @@
+# --- Secrets & environment ---
+.env
+.env.*
+!.env.example
+*.local
+secrets.*
+*.pem
+*.key
+credentials.json
+
+# --- OS files ---
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# --- Editor / IDE ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# --- Node / JS ---
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnp.*
+dist/
+build/
+.cache/
+*.tsbuildinfo
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.venv/
+venv/
+env/
+*.egg-info/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# --- Rust ---
+target/
+**/*.rs.bk
+
+# --- Go ---
+bin/
+*.test
+*.out
+
+# --- Java / JVM ---
+*.class
+*.jar
+.gradle/
+
+# --- Logs & temp ---
+*.log
+tmp/
+temp/
