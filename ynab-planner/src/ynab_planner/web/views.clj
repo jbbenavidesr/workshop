@@ -71,7 +71,9 @@
        [:form#plan-form {:method "post" :action "/plan/update" :class "[ stack ]"}
         (balance-bar view)
         (distribution (:distribution view))
-        [:div {:class "[ stack ]"} (category-fieldsets (:categories view))]
+        [:div {:class "[ stack ]"}
+         [:p {:class "[ text-muted ]"} "Editar un monto fija ese valor como meta mensual para ese mes."]
+         (category-fieldsets (:categories view))]
         [:button {:type "submit"} "Recalcular"]]
        (diff-list (:diff view))]]])))
 

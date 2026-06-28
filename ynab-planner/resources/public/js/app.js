@@ -12,6 +12,7 @@ async function recalc() {
     body: new URLSearchParams(new FormData(form))
   });
   if (res.ok) applyView(await res.json());
+  else console.error('plan update failed:', res.status);
 }
 
 function applyView(view) {
@@ -25,6 +26,28 @@ function applyView(view) {
   for (const p of view.distribution.pillars) {
     const el = document.querySelector(`distribution-bar[data-pillar="${p.pillar}"]`);
     if (el) el.update(p);
+  }
+
+  // Re-render the diff checklist, preserving the server-rendered <h2> heading.
+  const diffSection = document.querySelector('#diff');
+  if (diffSection) {
+    // Remove any existing <ul> or <p> after the heading (the dynamic part).
+    for (const child of [...diffSection.children]) {
+      if (child.tagName !== 'H2') child.remove();
+    }
+    if (!view.diff || view.diff.length === 0) {
+      const p = document.createElement('p');
+      p.textContent = 'Sin cambios — el plan coincide con YNAB.';
+      diffSection.appendChild(p);
+    } else {
+      const ul = document.createElement('ul');
+      for (const item of view.diff) {
+        const li = document.createElement('li');
+        li.textContent = `${item.name}: ${format(item.current)} → ${format(item.planned)}`;
+        ul.appendChild(li);
+      }
+      diffSection.appendChild(ul);
+    }
   }
 }
 
