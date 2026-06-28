@@ -1,0 +1,32 @@
+:root {
+  /* Fluid type scale (Utopia style, 320 → 1240px) */
+  --step--1: clamp(0.83rem, 0.78rem + 0.24vw, 0.94rem);
+  --step-0:  clamp(1.00rem, 0.93rem + 0.33vw, 1.13rem);
+  --step-1:  clamp(1.20rem, 1.10rem + 0.49vw, 1.41rem);
+  --step-2:  clamp(1.44rem, 1.30rem + 0.69vw, 1.77rem);
+  --step-3:  clamp(1.73rem, 1.54rem + 0.96vw, 2.21rem);
+
+  /* Fluid space scale (Utopia style) */
+  --space-3xs: clamp(0.25rem, 0.24rem + 0.06vw, 0.31rem);
+  --space-2xs: clamp(0.50rem, 0.48rem + 0.11vw, 0.56rem);
+  --space-xs:  clamp(0.75rem, 0.72rem + 0.16vw, 0.88rem);
+  --space-s:   clamp(1.00rem, 0.95rem + 0.22vw, 1.13rem);
+  --space-m:   clamp(1.50rem, 1.43rem + 0.33vw, 1.69rem);
+  --space-l:   clamp(2.00rem, 1.91rem + 0.43vw, 2.25rem);
+  --space-xl:  clamp(3.00rem, 2.87rem + 0.65vw, 3.38rem);
+
+  /* Color tokens — YNAB-like */
+  --color-bg:        #f4f6f8;  /* light-gray app background */
+  --color-surface:   #ffffff;  /* cards */
+  --color-border:    #e4e8ec;
+  --color-ink:       #16202c;  /* near-navy text */
+  --color-ink-muted: #5d6b79;
+  --color-accent:    #2d9cdb;  /* YNAB-ish blue */
+  --color-positive:  #15803d;  /* balanced (green) */
+  --color-negative:  #b91c1c;  /* over */
+  --color-warning:   #b45309;  /* under / untagged */
+
+  /* Misc tokens */
+  --radius: 0.5rem;
+  --shadow: 0 1px 2px rgb(20 35 59 / 0.08);
+}
