@@ -1,0 +1,10 @@
+{:paths ["src" "resources"]
+ :deps {org.clojure/clojure {:mvn/version "1.12.0"}
+        http-kit/http-kit   {:mvn/version "2.8.0"}
+        cheshire/cheshire   {:mvn/version "5.13.0"}
+        hiccup/hiccup       {:mvn/version "2.0.0-RC3"}}
+ :aliases
+ {:test {:extra-paths ["test"]
+         :extra-deps  {lambdaisland/kaocha {:mvn/version "1.91.1392"}}
+         :main-opts   ["-m" "kaocha.runner"]}
+  :run  {:main-opts ["-m" "ynab-planner.main"]}}}
