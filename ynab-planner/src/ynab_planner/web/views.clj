@@ -33,16 +33,35 @@
    (when (pos? untagged)
      [:p {:data-status "under"} "Sin clasificar: " (fmt untagged)])])
 
+(def ^:private pillar-options
+  [["" "—"]
+   ["donaciones" "Donaciones"]
+   ["ahorro" "Ahorro"]
+   ["fun" "Fun"]
+   ["necesario" "Necesario"]])
+
+(defn- pillar-select [c]
+  (let [current (or (some-> (:pillar c) name) "")]
+    [:select {:name (str "pillar-" (:id c)) :aria-label "Pilar"}
+     (for [[v label] pillar-options]
+       [:option (cond-> {:value v} (= v current) (assoc :selected "selected")) label])]))
+
+(defn- category-row [c]
+  [:category-row {:data-id (:id c) :data-pillar (some-> (:pillar c) name)}
+   [:label (:name c)
+    [:input {:type "number" :name (str "cat-" (:id c))
+             :value (:monthly c) :inputmode "numeric" :data-id (:id c)}]]
+   [:span {:class "[ amount-echo ] [ text-muted ]"} (fmt (:monthly c))]
+   (pillar-select c)])
+
 (defn- category-fieldsets [categories]
-  (for [[group cats] (group-by :group-name categories)]
+  ;; Preserve YNAB's group order (first appearance) — categories arrive in
+  ;; group-then-category order from the cache. group-by would scramble it.
+  (for [group (distinct (map :group-name categories))
+        :let [cats (filter #(= group (:group-name %)) categories)]]
     [:fieldset {:class "[ stack ] [ card ]"}
      [:legend group]
-     (for [c cats]
-       [:category-row {:data-id (:id c)
-                       :data-pillar (some-> (:pillar c) name)}
-        [:label (:name c)
-         [:input {:type "number" :name (str "cat-" (:id c))
-                  :value (:monthly c) :inputmode "numeric" :data-id (:id c)}]]])]))
+     (map category-row cats)]))
 
 (defn- diff-list [diff]
   [:section#diff {:class "[ stack ] [ card ]"}

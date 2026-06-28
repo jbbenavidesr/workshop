@@ -47,6 +47,14 @@
                         (assoc-in p [:categories id :spec] {:type :monthly :amount n})
                         p))
 
+                    (str/starts-with? k "pillar-")
+                    (let [id (subs k 7)]
+                      (if (str/blank? v)
+                        (cond-> p
+                          (contains? (:categories p) id)
+                          (update-in [:categories id] dissoc :pillar))
+                        (assoc-in p [:categories id :pillar] (keyword v))))
+
                     :else p))
                 (store/read-plan dir)
                 params)]

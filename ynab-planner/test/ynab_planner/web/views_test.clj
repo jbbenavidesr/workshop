@@ -32,6 +32,24 @@
     (is (str/includes? html "<legend"))
     (is (str/includes? html "[ stack ]"))))
 
+(deftest renders-pillar-selector-and-echo
+  (let [html (views/render-page view)]
+    ;; a pillar <select> per category, with the current pillar pre-selected
+    (is (str/includes? html "name=\"pillar-c1\""))
+    (is (or (re-find #"(?s)<option[^>]*value=\"necesario\"[^>]*selected" html)
+            (re-find #"(?s)<option[^>]*selected[^>]*value=\"necesario\"" html)))
+    ;; live amount echo element
+    (is (str/includes? html "amount-echo"))))
+
+(deftest groups-render-in-first-appearance-order
+  (let [v (assoc view :categories
+                 [{:id "a" :name "A" :group-name "🏡 Hogar" :monthly 1 :ynab-current 1 :planned 1}
+                  {:id "b" :name "B" :group-name "🎉 Diversión" :monthly 1 :ynab-current 1 :planned 1}
+                  {:id "c" :name "C" :group-name "🏡 Hogar" :monthly 1 :ynab-current 1 :planned 1}])
+        html (views/render-page v)]
+    ;; Hogar appears before Diversión (and grouped, despite the interleaved 'c').
+    (is (< (.indexOf html "🏡 Hogar") (.indexOf html "🎉 Diversión")))))
+
 (deftest update-response-is-json-friendly
   (let [resp (views/update-response view)]
     (is (= :under (get-in resp [:balance :status])))
