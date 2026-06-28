@@ -1,0 +1,14 @@
+{"data":{"category_groups":[
+  {"id":"g1","name":"🏡 Hogar","deleted":false,"categories":[
+    {"id":"c1","name":"🏠 Arriendo","deleted":false,"hidden":false,
+     "balance":0,"budgeted":1500000000,"activity":0,
+     "goal_type":"MF","goal_target":1500000000,"goal_target_month":null,
+     "goal_cadence":null,"goal_under_funded":1500000000},
+    {"id":"c2","name":"🛡️ Seguro de Vida","deleted":false,"hidden":false,
+     "balance":3800000000,"budgeted":0,"activity":0,
+     "goal_type":"TBD","goal_target":7800000000,"goal_target_month":"2026-09-01",
+     "goal_cadence":null,"goal_under_funded":1000000000},
+    {"id":"c3","name":"💤 Vieja","deleted":true,"hidden":false,
+     "balance":0,"goal_type":null}
+  ]}
+]}}
