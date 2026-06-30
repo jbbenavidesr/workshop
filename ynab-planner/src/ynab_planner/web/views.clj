@@ -148,6 +148,3 @@
       [:h2 "Datos · YNAB"]
       [:p {:class "[ text-muted ]"} "Sincronizado: " (or (:synced-at view) "nunca")]
       [:form {:method "post" :action "/sync"} [:button {:type "submit"} "Sincronizar ahora"]]])))
-
-;; TEMP compat shim — removed in the server-routing task.
-(def render-page render-plan-page)
