@@ -85,5 +85,28 @@
                   (get-in view [:pillar-sections :pillars]))
    :untagged (get-in view [:pillar-sections :untagged])})
 
+;; ---------- Apply page ----------
+
+(defn- diff-line [{:keys [name current planned]}]
+  (let [dir (cond (> planned current) "▲" (< planned current) "▼" :else "")]
+    [:li {:class "[ diff-line ]"}
+     [:label
+      [:input {:type "checkbox"}]
+      [:span {:class "[ diff-name ]"} name]
+      [:span {:class "[ diff-from ] [ text-muted ]"} (fmt current)]
+      [:span {:class "[ diff-arrow ]"} "→"]
+      [:span {:class "[ diff-to ]"} (fmt planned) " " dir]]]))
+
+(defn render-apply-page [view]
+  (layout {:title "Aplicar en YNAB"}
+   [:a {:href "/"} "← Volver al plan"]
+   [:h1 "Cambios para aplicar en YNAB"]
+   (if (empty? (:diff view))
+     [:p "Sin cambios — el plan coincide con YNAB."]
+     (for [{:keys [group-name items]} (diff/grouped-diff (:diff view))]
+       [:section {:class "[ stack ] [ card ]"}
+        [:h2 group-name]
+        [:ul {:class "[ diff-list ]"} (map diff-line items)]]))))
+
 ;; TEMP compat shim — removed in the server-routing task.
 (def render-page render-plan-page)

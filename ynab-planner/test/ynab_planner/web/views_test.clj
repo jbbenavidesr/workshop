@@ -39,3 +39,16 @@
     (is (= 1 (:diffCount resp)))
     (is (= "necesario" (:pillar (first (:pillars resp)))))
     (is (not (contains? resp :diff)))))
+
+(deftest apply-page-groups-by-ynab-group-with-checkboxes
+  (let [html (views/render-apply-page view)]
+    (is (str/includes? html "🏡 Hogar"))           ; group heading
+    (is (str/includes? html "🏠 Arriendo"))         ; changed category
+    (is (str/includes? html "type=\"checkbox\""))   ; tick-off
+    (is (str/includes? html "href=\"/\""))          ; back link
+    (is (str/includes? html "$1.500.000"))          ; current
+    (is (str/includes? html "$1.600.000"))))        ; planned
+
+(deftest apply-page-empty-when-no-changes
+  (let [html (views/render-apply-page (assoc view :diff []))]
+    (is (str/includes? html "Sin cambios"))))
