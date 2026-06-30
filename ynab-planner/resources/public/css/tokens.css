@@ -15,18 +15,38 @@
   --space-l:   clamp(2.00rem, 1.91rem + 0.43vw, 2.25rem);
   --space-xl:  clamp(3.00rem, 2.87rem + 0.65vw, 3.38rem);
 
-  /* Color tokens — YNAB-like */
-  --color-bg:        #f4f6f8;  /* light-gray app background */
-  --color-surface:   #ffffff;  /* cards */
-  --color-border:    #e4e8ec;
-  --color-ink:       #16202c;  /* near-navy text */
-  --color-ink-muted: #5d6b79;
-  --color-accent:    #2d9cdb;  /* YNAB-ish blue */
-  --color-positive:  #15803d;  /* balanced (green) */
-  --color-negative:  #b91c1c;  /* over */
-  --color-warning:   #b45309;  /* under / untagged */
+  /* Primitive palette — raw values, not used directly by components */
+  --white:   #ffffff;
+  --gray-05: #f4f6f8;
+  --gray-15: #e4e8ec;
+  --gray-40: #5d6b79;
+  --gray-90: #16202c;
+  --blue-50: #2d9cdb;
+  --green-60:#15803d;
+  --amber-60:#b45309;
+  --red-60:  #b91c1c;
+  /* Pillar accents — referenced by index, never by pillar name */
+  --pillar-0: #3a5bd0;
+  --pillar-1: #1f9d57;
+  --pillar-2: #c08a00;
+  --pillar-3: #8a4fc7;
 
   /* Misc tokens */
   --radius: 0.5rem;
   --shadow: 0 1px 2px rgb(20 35 59 / 0.08);
+}
+
+/* Semantic color tokens — light is the default theme. A future `.theme-dark`
+   block overrides these same names (class-based, gomakethings style). */
+:where(:root),
+.theme-light {
+  --color-bg:        var(--gray-05);
+  --color-surface:   var(--white);
+  --color-border:    var(--gray-15);
+  --color-ink:       var(--gray-90);
+  --color-ink-muted: var(--gray-40);
+  --color-accent:    var(--blue-50);
+  --color-positive:  var(--green-60);
+  --color-negative:  var(--red-60);
+  --color-warning:   var(--amber-60);
 }
