@@ -52,3 +52,14 @@
 (deftest apply-page-empty-when-no-changes
   (let [html (views/render-apply-page (assoc view :diff []))]
     (is (str/includes? html "Sin cambios"))))
+
+(deftest settings-page-has-income-classify-and-sync
+  (let [html (views/render-settings-page view)]
+    (is (str/includes? html "action=\"/income\""))
+    (is (str/includes? html "name=\"income\""))
+    (is (str/includes? html "action=\"/classify\""))
+    (is (str/includes? html "name=\"pillar-c1\""))
+    ;; option built from :pillar-targets, current pillar preselected
+    (is (or (re-find #"(?s)<option[^>]*value=\"necesario\"[^>]*selected" html)
+            (re-find #"(?s)<option[^>]*selected[^>]*value=\"necesario\"" html)))
+    (is (str/includes? html "action=\"/sync\""))))

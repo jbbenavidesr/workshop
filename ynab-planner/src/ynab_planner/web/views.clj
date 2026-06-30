@@ -108,5 +108,45 @@
         [:h2 group-name]
         [:ul {:class "[ diff-list ]"} (map diff-line items)]]))))
 
+;; ---------- Settings page ----------
+
+(defn- pillar-select [c pillar-targets]
+  (let [current (or (some-> (:pillar c) name) "")]
+    [:select {:name (str "pillar-" (:id c)) :aria-label "Pilar"}
+     [:option (cond-> {:value ""} (= "" current) (assoc :selected "selected")) "—"]
+     (for [p (keys pillar-targets) :let [v (name p)]]
+       [:option (cond-> {:value v} (= v current) (assoc :selected "selected")) v])]))
+
+(defn- classify-fieldset [legend cats pillar-targets status]
+  [:fieldset (cond-> {:class "[ stack ]"} status (assoc :data-status status))
+   [:legend legend]
+   (for [c cats]
+     [:label [:span (:name c)] (pillar-select c pillar-targets)])])
+
+(defn render-settings-page [view]
+  (let [cats     (:categories view)
+        targets  (:pillar-targets view)
+        untagged (filter #(nil? (:pillar %)) cats)]
+    (layout {:title "Ajustes"}
+     [:a {:href "/"} "← Volver al plan"]
+     [:h1 "Ajustes"]
+     [:form {:method "post" :action "/income" :class "[ stack ] [ card ]"}
+      [:h2 "Ingreso base"]
+      [:label [:span "Ingreso mensual"]
+       [:input {:type "number" :name "income" :value (:income view) :inputmode "numeric"}]]
+      [:button {:type "submit"} "Guardar ingreso"]]
+     [:form {:method "post" :action "/classify" :class "[ stack ] [ card ]"}
+      [:h2 "Clasificación de pilares"]
+      (when (seq untagged)
+        (classify-fieldset "⚠️ Sin clasificar" untagged targets "under"))
+      (for [group (distinct (map :group-name cats))
+            :let [gcats (filter #(= group (:group-name %)) cats)]]
+        (classify-fieldset group gcats targets nil))
+      [:button {:type "submit"} "Guardar clasificación"]]
+     [:section {:class "[ stack ] [ card ]"}
+      [:h2 "Datos · YNAB"]
+      [:p {:class "[ text-muted ]"} "Sincronizado: " (or (:synced-at view) "nunca")]
+      [:form {:method "post" :action "/sync"} [:button {:type "submit"} "Sincronizar ahora"]]])))
+
 ;; TEMP compat shim — removed in the server-routing task.
 (def render-page render-plan-page)
