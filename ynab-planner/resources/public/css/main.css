@@ -15,9 +15,11 @@ body {
   background: var(--color-bg); color: var(--color-ink);
   font-family: system-ui, sans-serif; font-size: var(--step-0); line-height: 1.5;
 }
+main { max-inline-size: 48rem; margin-inline: auto; }
 h1 { font-size: var(--step-3); margin: 0; }
 h2 { font-size: var(--step-2); margin: 0; }
 legend { font-size: var(--step-1); font-weight: 600; }
+a { color: var(--color-accent); }
 
 /* ============ Blocks: generic ============ */
 .card {
@@ -53,27 +55,83 @@ select {
 [data-status="over"]     { color: var(--color-negative); font-weight: 700; }
 [data-status="under"]    { color: var(--color-warning);  font-weight: 700; }
 
+/* pillar accent palette, keyed by index (config-safe) */
+[data-index="0"] { --pc: var(--pillar-0); }
+[data-index="1"] { --pc: var(--pillar-1); }
+[data-index="2"] { --pc: var(--pillar-2); }
+[data-index="3"] { --pc: var(--pillar-3); }
+[data-index="4"] { --pc: var(--pillar-0); }   /* cycle beyond the current four */
+[data-index="5"] { --pc: var(--pillar-1); }
+
 /* ============ App-specific tweaks (last) ============ */
-distribution-bar {
-  display: grid; gap: var(--space-3xs);
-  grid-template-columns: 1fr auto;
-  padding-block: var(--space-2xs);
-  border-block-end: 1px solid var(--color-border);
+
+/* balance summary */
+.balance-assigned { margin: 0; }
+.balance-assigned #total { font-size: var(--step-2); font-weight: 800; }
+
+/* untagged nudge */
+.nudge { display: block; text-decoration: none; }
+
+/* pillar card */
+pillar-card { display: block; }
+pillar-card .card,
+pillar-card details {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-inline-start: var(--space-3xs) solid var(--pc, var(--color-accent));
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
 }
-distribution-bar .bar {
-  grid-column: 1 / -1; block-size: var(--space-2xs);
-  background: var(--color-border); border-radius: var(--radius); overflow: hidden;
+.pillar-head {
+  display: grid;
+  grid-template-columns: 1fr minmax(6rem, 2fr) auto;
+  grid-template-areas: "name bar amount" "pct bar amount";
+  gap: var(--space-3xs) var(--space-s);
+  align-items: center;
+  padding: var(--space-xs);
+  cursor: pointer;
 }
-distribution-bar .bar > span { display: block; block-size: 100%; background: var(--color-accent); }
-distribution-bar .pct { grid-column: 1 / -1; font-size: var(--step--1); }
+.pillar-name   { grid-area: name; font-weight: 700; }
+.pillar-pct    { grid-area: pct; font-size: var(--step--1); }
+.pillar-amount { grid-area: amount; font-variant-numeric: tabular-nums; }
+.pillar-bar {
+  grid-area: bar; position: relative;
+  block-size: var(--space-2xs);
+  background: var(--color-border); border-radius: var(--radius); overflow: visible;
+}
+.pillar-bar .fill { display: block; block-size: 100%; background: var(--pc, var(--color-accent)); border-radius: var(--radius); }
+.pillar-bar .tick {
+  position: absolute; inset-block: -2px; inline-size: 2px;
+  background: var(--color-ink); opacity: 0.5;
+}
+pillar-card details > category-row:first-of-type { border-block-start: 1px solid var(--color-border); }
+
+/* category row */
 category-row {
   display: grid; gap: var(--space-2xs);
-  padding-block: var(--space-2xs);
+  padding: var(--space-2xs) var(--space-xs);
   border-block-end: 1px solid var(--color-border);
 }
+.group-tag { font-size: var(--step--1); }
 .amount-echo { font-size: var(--step--1); text-align: end; }
+
+/* CTA to the apply page */
+.cta {
+  display: block; text-align: center; text-decoration: none;
+  padding: var(--space-s); border-radius: var(--radius);
+  background: var(--color-accent); color: var(--color-surface); font-weight: 700;
+}
+
+/* apply checklist */
+.diff-list { list-style: none; padding-inline-start: 0; }
+.diff-line label {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2xs);
+  padding-block: var(--space-2xs); border-block-end: 1px solid var(--color-border);
+}
+.diff-line .diff-name { flex: 1; }
+.diff-line:has(:checked) label { opacity: 0.45; text-decoration: line-through; }
 
 /* Mobile-first: stacked. Enhance to two columns on wider viewports. */
 @media (min-width: 40rem) {
-  category-row label { grid-template-columns: 1fr 12rem; align-items: center; }
+  category-row { grid-template-columns: 1fr 12rem; align-items: center; }
 }
