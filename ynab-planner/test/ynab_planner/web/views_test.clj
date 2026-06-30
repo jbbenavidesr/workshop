@@ -137,3 +137,7 @@
     (let [g ((bg) 0 0)]
       (is (false? (:over? g)))
       (is (= 0.0 (:solid-pct g))))))
+
+(deftest pillar-card-has-toggle-hint
+  (let [html (views/render-plan-page view)]
+    (is (str/includes? html "pillar-toggle"))))

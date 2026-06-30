@@ -75,7 +75,8 @@
         [:span {:class "[ tick ]" :style (str "inset-inline-start:" mark-pct "%")}]]
        [:span {:class "[ pillar-amount ]"} (fmt amount)]
        [:span {:class "[ pillar-pct ] [ text-muted ]"}
-        (format "%.1f%% / %d%%" (double actual-pct) ideal-pct)]]
+        (format "%.1f%% / %d%%" (double actual-pct) ideal-pct)
+        [:span {:class "[ pillar-toggle ]"}]]]
       (map category-row categories)]]))
 
 (defn render-plan-page [view]
