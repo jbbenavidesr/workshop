@@ -95,15 +95,17 @@ pillar-card details {
 .pillar-pct    { grid-area: pct; font-size: var(--step--1); }
 .pillar-amount { grid-area: amount; font-variant-numeric: tabular-nums; }
 .pillar-bar {
-  grid-area: bar; position: relative;
+  grid-area: bar; position: relative; display: flex;
   block-size: var(--space-2xs);
   background: var(--color-border); border-radius: var(--radius); overflow: visible;
 }
-.pillar-bar .fill { display: block; block-size: 100%; background: var(--pc, var(--color-accent)); border-radius: var(--radius); }
+.pillar-bar .fill { block-size: 100%; background: var(--pc, var(--color-accent)); border-radius: var(--radius); }
+.pillar-bar .over { block-size: 100%; background: var(--color-warning); border-radius: var(--radius); }
 .pillar-bar .tick {
   position: absolute; inset-block: -2px; inline-size: 2px;
-  background: var(--color-ink); opacity: 0.5;
+  background: var(--color-ink); opacity: 0.6; display: none;
 }
+.pillar-bar[data-over="true"] .tick { display: block; }
 pillar-card details > category-row:first-of-type { border-block-start: 1px solid var(--color-border); }
 
 /* category row */

@@ -48,17 +48,35 @@
              :inputmode "numeric" :data-id (:id c)}]]
    [:span {:class "[ amount-echo ] [ text-muted ]"} (fmt (:monthly c))]])
 
+(defn- bar-geometry
+  "Geometry for a target-relative pillar bar. actual/target are percentages of
+   income. Full bar = the target's share; the fill grows as actual/target. When
+   over target the bar rescales so full width = actual, with the target mark at
+   the solid/over boundary. Returns percentages as doubles."
+  [actual target]
+  (let [a (double actual)
+        t (double target)]
+    (cond
+      (<= a t) {:solid-pct (if (pos? t) (* 100.0 (/ a t)) 0.0)
+                :over-pct 0.0 :over? false :mark-pct 0.0}
+      :else    (let [solid (if (pos? a) (* 100.0 (/ t a)) 0.0)]
+                 {:solid-pct solid :over-pct (- 100.0 solid)
+                  :over? true :mark-pct solid}))))
+
 (defn- pillar-card [i {:keys [pillar amount actual-pct ideal-pct categories]}]
-  [:pillar-card {:data-index i :data-pillar (name pillar)}
-   [:details {:open true}
-    [:summary {:class "[ pillar-head ]"}
-     [:span {:class "[ pillar-name ]"} (name pillar)]
-     [:span {:class "[ pillar-bar ]"}
-      [:span {:class "[ fill ]" :style (str "inline-size:" (min 100.0 (double actual-pct)) "%")}]
-      [:span {:class "[ tick ]" :style (str "inset-inline-start:" (min 100.0 (double ideal-pct)) "%")}]]
-     [:span {:class "[ pillar-amount ]"} (fmt amount)]
-     [:span {:class "[ pillar-pct ] [ text-muted ]"} (format "%.1f%% / %d%%" (double actual-pct) ideal-pct)]]
-    (map category-row categories)]])
+  (let [{:keys [solid-pct over-pct over? mark-pct]} (bar-geometry actual-pct ideal-pct)]
+    [:pillar-card {:data-index i :data-pillar (name pillar)}
+     [:details {:open true}
+      [:summary {:class "[ pillar-head ]"}
+       [:span {:class "[ pillar-name ]"} (name pillar)]
+       [:span {:class "[ pillar-bar ]" :data-over (when over? "true")}
+        [:span {:class "[ fill ]" :style (str "inline-size:" solid-pct "%")}]
+        [:span {:class "[ over ]" :style (str "inline-size:" over-pct "%")}]
+        [:span {:class "[ tick ]" :style (str "inset-inline-start:" mark-pct "%")}]]
+       [:span {:class "[ pillar-amount ]"} (fmt amount)]
+       [:span {:class "[ pillar-pct ] [ text-muted ]"}
+        (format "%.1f%% / %d%%" (double actual-pct) ideal-pct)]]
+      (map category-row categories)]]))
 
 (defn render-plan-page [view]
   (let [sections (:pillar-sections view)]

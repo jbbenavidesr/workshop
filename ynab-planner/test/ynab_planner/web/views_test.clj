@@ -85,3 +85,48 @@
     ;; untagged still shows in the Sin clasificar section
     (is (str/includes? html "Sin clasificar")
         "Sin clasificar fieldset should be present")))
+
+(def view-with-over
+  (assoc view :pillar-sections
+         {:pillars [{:pillar :necesario :amount 1600000 :actual-pct 44.4 :ideal-pct 40
+                     :categories [{:id "c1" :name "🏠 Arriendo" :group-name "🏡 Hogar" :monthly 1600000}]}
+                    {:pillar :ahorro :amount 200000 :actual-pct 5.0 :ideal-pct 20
+                     :categories [{:id "c9" :name "💰 FPV" :group-name "🏡 Hogar" :monthly 200000}]}]
+          :untagged-categories [] :untagged 0}))
+
+(deftest pillar-bar-marks-over-only
+  (let [html (views/render-plan-page view-with-over)]
+    ;; the over pillar (necesario 44.4 > 40) carries data-over="true"
+    (is (str/includes? html "data-over=\"true\""))
+    ;; the under pillar (ahorro 5 < 20) has a bar WITHOUT data-over
+    (is (str/includes? html "[ pillar-bar ]"))
+    ;; both pillars still render a fill segment
+    (is (str/includes? html "[ fill ]"))
+    (is (str/includes? html "[ over ]"))))
+
+(deftest bar-geometry-under-at-over
+  (let [bg #(deref (resolve 'ynab-planner.web.views/bar-geometry))]
+    ;; under target: fill = actual/target, no over, no mark
+    (let [g ((bg) 30 40)]
+      (is (false? (:over? g)))
+      (is (< 74.9 (:solid-pct g) 75.1))   ; 30/40 = 75%
+      (is (= 0.0 (:over-pct g))))
+    ;; at target: full, not over
+    (let [g ((bg) 40 40)]
+      (is (false? (:over? g)))
+      (is (< 99.9 (:solid-pct g) 100.1)))
+    ;; over target: rescale to actual; solid = target/actual, over = remainder, mark at solid
+    (let [g ((bg) 50 40)]
+      (is (true? (:over? g)))
+      (is (< 79.9 (:solid-pct g) 80.1))   ; 40/50 = 80%
+      (is (< 19.9 (:over-pct g) 20.1))    ; remainder
+      (is (< 79.9 (:mark-pct g) 80.1)))   ; mark at the target boundary
+    ;; edge: target 0, actual > 0 -> fully over
+    (let [g ((bg) 10 0)]
+      (is (true? (:over? g)))
+      (is (= 0.0 (:solid-pct g)))
+      (is (= 100.0 (:over-pct g))))
+    ;; edge: both zero -> empty, not over
+    (let [g ((bg) 0 0)]
+      (is (false? (:over? g)))
+      (is (= 0.0 (:solid-pct g))))))
