@@ -126,7 +126,8 @@
 (defn render-settings-page [view]
   (let [cats     (:categories view)
         targets  (:pillar-targets view)
-        untagged (filter #(nil? (:pillar %)) cats)]
+        untagged (filter #(nil? (:pillar %)) cats)
+        tagged   (filter #(some? (:pillar %)) cats)]
     (layout {:title "Ajustes"}
      [:a {:href "/"} "← Volver al plan"]
      [:h1 "Ajustes"]
@@ -139,8 +140,8 @@
       [:h2 "Clasificación de pilares"]
       (when (seq untagged)
         (classify-fieldset "⚠️ Sin clasificar" untagged targets "under"))
-      (for [group (distinct (map :group-name cats))
-            :let [gcats (filter #(= group (:group-name %)) cats)]]
+      (for [group (distinct (map :group-name tagged))
+            :let [gcats (filter #(= group (:group-name %)) tagged)]]
         (classify-fieldset group gcats targets nil))
       [:button {:type "submit"} "Guardar clasificación"]]
      [:section {:class "[ stack ] [ card ]"}

@@ -63,3 +63,25 @@
     (is (or (re-find #"(?s)<option[^>]*value=\"necesario\"[^>]*selected" html)
             (re-find #"(?s)<option[^>]*selected[^>]*value=\"necesario\"" html)))
     (is (str/includes? html "action=\"/sync\""))))
+
+(deftest settings-page-each-category-appears-exactly-once
+  ;; Regression: an untagged category that has a :group-name was being rendered
+  ;; in the "Sin clasificar" fieldset AND again under its group, producing two
+  ;; <select name="pillar-<id>"> elements — ambiguous form params on submit.
+  (let [local-view {:income 3600000
+                    :synced-at "2026-06-29T10:00:00Z"
+                    :pillar-targets {:necesario 40}
+                    :categories [{:id "u1" :name "Sin pilar" :group-name "🏡 Hogar"
+                                  :pillar nil :monthly 0}
+                                 {:id "t1" :name "Con pilar" :group-name "🏡 Hogar"
+                                  :pillar :necesario :monthly 500000}]}
+        html (views/render-settings-page local-view)]
+    ;; untagged category appears EXACTLY once (not duplicated under its group)
+    (is (= 1 (count (re-seq #"name=\"pillar-u1\"" html)))
+        "pillar-u1 select should appear exactly once")
+    ;; tagged category also appears exactly once
+    (is (= 1 (count (re-seq #"name=\"pillar-t1\"" html)))
+        "pillar-t1 select should appear exactly once")
+    ;; untagged still shows in the Sin clasificar section
+    (is (str/includes? html "Sin clasificar")
+        "Sin clasificar fieldset should be present")))
