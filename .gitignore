@@ -70,4 +70,5 @@ bin/
 *.log
 tmp/
 temp/
-docs/superpowers/
+**/docs/superpowers/
+.superpowers/
