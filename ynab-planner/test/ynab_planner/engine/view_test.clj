@@ -35,3 +35,26 @@
     (is (= 2 (count (:categories view))))
     (is (= 1 (count (:diff view))))                              ; only c1 changed
     (is (= "2026-06-27T12:00:00Z" (:synced-at view)))))
+
+(deftest pillar-sections-groups-and-sorts
+  (let [cats [{:id "a" :pillar :necesario :monthly 100 :group-name "G"}
+              {:id "b" :pillar :necesario :monthly 900 :group-name "G"}
+              {:id "c" :pillar :fun       :monthly 200 :group-name "G"}
+              {:id "d" :pillar nil        :monthly 50  :group-name "G"}]
+        dist {:pillars [{:pillar :necesario :amount 1000 :actual-pct 50.0 :ideal-pct 40}
+                        {:pillar :fun       :amount 200  :actual-pct 10.0 :ideal-pct 30}]
+              :untagged 50}
+        sec  (v/pillar-sections cats dist)]
+    ;; pillars stay in distribution order
+    (is (= [:necesario :fun] (mapv :pillar (:pillars sec))))
+    ;; categories sorted by :monthly descending within a pillar
+    (is (= ["b" "a"] (mapv :id (:categories (first (:pillars sec))))))
+    ;; untagged carried separately
+    (is (= ["d"] (mapv :id (:untagged-categories sec))))
+    (is (= 50 (:untagged sec)))))
+
+(deftest build-view-emits-sections-and-targets
+  (let [view (v/build-view cache plan jun)]
+    (is (contains? view :pillar-sections))
+    (is (= {:necesario 40 :ahorro 20} (:pillar-targets view)))
+    (is (= 2 (count (:pillars (:pillar-sections view)))))))
