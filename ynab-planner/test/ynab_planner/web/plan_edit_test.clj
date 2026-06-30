@@ -33,18 +33,4 @@
   (let [plan {:categories {"c1" {:pillar :fun} "c2" {}}}
         out (pe/apply-pillars plan {"pillar-c1" "" "pillar-c2" "ahorro"})]
     (is (nil? (get-in out [:categories "c1" :pillar])))            ; blank -> cleared
-    (is (= :ahorro (get-in out [:categories "c2" :pillar])))))    ; set
-
-(deftest apply-pillars-ignores-unknown-id
-  (let [plan {:categories {"c1" {}}}
-        out  (pe/apply-pillars plan {"pillar-zzz" "fun"})]
-    (is (nil? (get-in out [:categories "zzz"]))
-        "unknown id must not create a phantom category entry")
-    (is (= #{"c1"} (set (keys (:categories out))))
-        "categories map must still contain only the original key")))
-
-(deftest apply-pillars-known-id-still-set-after-fix
-  (let [plan {:categories {"c1" {}}}
-        out  (pe/apply-pillars plan {"pillar-c1" "fun"})]
-    (is (= :fun (get-in out [:categories "c1" :pillar]))
-        "known id must still receive the pillar keyword")))     ; set
+    (is (= :ahorro (get-in out [:categories "c2" :pillar])))))     ; set

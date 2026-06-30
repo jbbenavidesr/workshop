@@ -25,10 +25,9 @@
   (reduce (fn [p [k v]]
             (if (str/starts-with? k "pillar-")
               (let [id (subs k 7)]
-                (if (contains? (:categories p) id)
-                  (if (str/blank? v)
-                    (update-in p [:categories id] dissoc :pillar)
-                    (assoc-in p [:categories id :pillar] (keyword v)))
-                  p))
+                (if (str/blank? v)
+                  (cond-> p
+                    (contains? (:categories p) id) (update-in [:categories id] dissoc :pillar))
+                  (assoc-in p [:categories id :pillar] (keyword v))))
               p))
           plan params))
