@@ -1,5 +1,5 @@
 customElements.define(
-  'distribution-bar',
+  'pillar-card',
   class extends HTMLElement {
     /** @type HTMLElement | null */ #fill;
     /** @type HTMLElement | null */ #pct;
@@ -11,9 +11,9 @@ customElements.define(
     }
 
     init() {
-      this.#fill = this.querySelector('.bar > span');
-      this.#pct = this.querySelector('.pct');
-      this.#amount = this.querySelector('.amount');
+      this.#fill = this.querySelector('.pillar-bar .fill');
+      this.#pct = this.querySelector('.pillar-pct');
+      this.#amount = this.querySelector('.pillar-amount');
     }
 
     // Public: controller calls this with { pillar, amount, actualPct, idealPct }.
