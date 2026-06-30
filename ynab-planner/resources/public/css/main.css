@@ -103,8 +103,21 @@ pillar-card details {
   block-size: var(--space-2xs);
   background: var(--color-border); border-radius: var(--radius); overflow: visible;
 }
-.pillar-bar .fill { block-size: 100%; background: var(--pc, var(--color-accent)); border-radius: var(--radius); }
-.pillar-bar .over { block-size: 100%; background: var(--color-warning); border-radius: var(--radius); }
+/* fill + over share the pillar color; over is a lighter shade of the same hue.
+   The fill is fully rounded by default, so an at-target/under bar has a rounded
+   end. When over, the fill's trailing edge is squared so it reads continuous
+   with the overflow segment (which carries the rounded right end instead). */
+.pillar-bar .fill {
+  block-size: 100%; background: var(--pc, var(--color-accent));
+  border-radius: var(--radius);
+}
+.pillar-bar[data-over="true"] .fill {
+  border-start-end-radius: 0; border-end-end-radius: 0;
+}
+.pillar-bar .over {
+  block-size: 100%; background: var(--pc, var(--color-accent)); opacity: 0.4;
+  border-start-end-radius: var(--radius); border-end-end-radius: var(--radius);
+}
 .pillar-bar .tick {
   position: absolute; inset-block: -2px; inline-size: 2px;
   background: var(--color-ink); opacity: 0.6; display: none;
