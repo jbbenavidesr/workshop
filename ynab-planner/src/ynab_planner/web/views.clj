@@ -37,7 +37,7 @@
 
 (defn- untagged-nudge [n]
   (when (pos? n)
-    [:a {:class "[ card ] [ nudge ]" :data-status "under" :href "/settings"}
+    [:a {:class "[ card ] [ nudge ]" :data-status "under" :href "/classify"}
      "⚠️ " n " sin clasificar — clasifícalas →"]))
 
 (defn- category-row [c]
@@ -142,27 +142,32 @@
      [:label [:span (:name c)] (pillar-select c pillar-targets)])])
 
 (defn render-settings-page [view]
+  (layout {:title "Ajustes"}
+   [:a {:href "/"} "← Volver al plan"]
+   [:h1 "Ajustes"]
+   [:form {:method "post" :action "/income" :class "[ stack ] [ card ]"}
+    [:h2 "Ingreso base"]
+    [:label [:span "Ingreso mensual"]
+     [:input {:type "number" :name "income" :value (:income view) :inputmode "numeric"}]]
+    [:button {:type "submit"} "Guardar ingreso"]]
+   [:a {:class "[ card ] [ settings-link ]" :href "/classify"} "Clasificar categorías →"]
+   [:section {:class "[ stack ] [ card ]"}
+    [:h2 "Datos · YNAB"]
+    [:p {:class "[ text-muted ]"} "Sincronizado: " (or (:synced-at view) "nunca")]
+    [:form {:method "post" :action "/sync"} [:button {:type "submit"} "Sincronizar ahora"]]]))
+
+(defn render-classify-page [view]
   (let [cats     (:categories view)
         targets  (:pillar-targets view)
         untagged (filter #(nil? (:pillar %)) cats)
         tagged   (filter #(some? (:pillar %)) cats)]
-    (layout {:title "Ajustes"}
-     [:a {:href "/"} "← Volver al plan"]
-     [:h1 "Ajustes"]
-     [:form {:method "post" :action "/income" :class "[ stack ] [ card ]"}
-      [:h2 "Ingreso base"]
-      [:label [:span "Ingreso mensual"]
-       [:input {:type "number" :name "income" :value (:income view) :inputmode "numeric"}]]
-      [:button {:type "submit"} "Guardar ingreso"]]
+    (layout {:title "Clasificar categorías"}
+     [:a {:href "/settings"} "← Volver a ajustes"]
+     [:h1 "Clasificar categorías"]
      [:form {:method "post" :action "/classify" :class "[ stack ] [ card ]"}
-      [:h2 "Clasificación de pilares"]
       (when (seq untagged)
         (classify-fieldset "⚠️ Sin clasificar" untagged targets "under"))
       (for [group (distinct (map :group-name tagged))
             :let [gcats (filter #(= group (:group-name %)) tagged)]]
         (classify-fieldset group gcats targets nil))
-      [:button {:type "submit"} "Guardar clasificación"]]
-     [:section {:class "[ stack ] [ card ]"}
-      [:h2 "Datos · YNAB"]
-      [:p {:class "[ text-muted ]"} "Sincronizado: " (or (:synced-at view) "nunca")]
-      [:form {:method "post" :action "/sync"} [:button {:type "submit"} "Sincronizar ahora"]]])))
+      [:button {:type "submit"} "Guardar clasificación"]])))

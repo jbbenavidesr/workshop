@@ -49,6 +49,7 @@
       [:get "/"]         (html (views/render-plan-page (current-view dir)))
       [:get "/apply"]    (html (views/render-apply-page (current-view dir)))
       [:get "/settings"] (html (views/render-settings-page (current-view dir)))
+      [:get "/classify"] (html (views/render-classify-page (current-view dir)))
 
       [:post "/plan/update"]
       (let [params (parse-form (slurp (:body req)))
@@ -69,7 +70,7 @@
       [:post "/classify"]
       (let [params (parse-form (slurp (:body req)))]
         (store/write-plan dir (edit/apply-pillars (store/read-plan dir) params))
-        (redirect "/settings"))
+        (redirect "/classify"))
 
       [:post "/sync"]
       (do (sync/sync-budget! {:now (str (Instant/now))

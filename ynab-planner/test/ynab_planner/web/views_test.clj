@@ -53,18 +53,16 @@
   (let [html (views/render-apply-page (assoc view :diff []))]
     (is (str/includes? html "Sin cambios"))))
 
-(deftest settings-page-has-income-classify-and-sync
+(deftest settings-page-has-income-link-and-sync
   (let [html (views/render-settings-page view)]
     (is (str/includes? html "action=\"/income\""))
     (is (str/includes? html "name=\"income\""))
-    (is (str/includes? html "action=\"/classify\""))
-    (is (str/includes? html "name=\"pillar-c1\""))
-    ;; option built from :pillar-targets, current pillar preselected
-    (is (or (re-find #"(?s)<option[^>]*value=\"necesario\"[^>]*selected" html)
-            (re-find #"(?s)<option[^>]*selected[^>]*value=\"necesario\"" html)))
+    ;; classification moved OUT of settings: no classify form here, just a link
+    (is (not (str/includes? html "action=\"/classify\"")))
+    (is (str/includes? html "href=\"/classify\""))
     (is (str/includes? html "action=\"/sync\""))))
 
-(deftest settings-page-each-category-appears-exactly-once
+(deftest classify-page-each-category-appears-exactly-once
   ;; Regression: an untagged category that has a :group-name was being rendered
   ;; in the "Sin clasificar" fieldset AND again under its group, producing two
   ;; <select name="pillar-<id>"> elements — ambiguous form params on submit.
@@ -75,7 +73,7 @@
                                   :pillar nil :monthly 0}
                                  {:id "t1" :name "Con pilar" :group-name "🏡 Hogar"
                                   :pillar :necesario :monthly 500000}]}
-        html (views/render-settings-page local-view)]
+        html (views/render-classify-page local-view)]
     ;; untagged category appears EXACTLY once (not duplicated under its group)
     (is (= 1 (count (re-seq #"name=\"pillar-u1\"" html)))
         "pillar-u1 select should appear exactly once")
@@ -85,6 +83,15 @@
     ;; untagged still shows in the Sin clasificar section
     (is (str/includes? html "Sin clasificar")
         "Sin clasificar fieldset should be present")))
+
+(deftest classify-page-has-form-untagged-first-and-back-link
+  (let [html (views/render-classify-page view)]
+    (is (str/includes? html "action=\"/classify\""))
+    (is (str/includes? html "name=\"pillar-c1\""))
+    (is (or (re-find #"(?s)<option[^>]*value=\"necesario\"[^>]*selected" html)
+            (re-find #"(?s)<option[^>]*selected[^>]*value=\"necesario\"" html)))
+    ;; back link goes to settings (classify is reached from settings)
+    (is (str/includes? html "href=\"/settings\""))))
 
 (def view-with-over
   (assoc view :pillar-sections
