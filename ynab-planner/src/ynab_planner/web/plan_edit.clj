@@ -13,9 +13,9 @@
   (reduce (fn [p [k v]]
             (if (str/starts-with? k "cat-")
               (let [id  (subs k 4)
-                    n   (parse-long (str v))
+                    n   (parse-long v)
                     cur (get before-by-id id)]
-                (if (and n cur (not= n cur))
+                (if (and (some? n) (contains? before-by-id id) (not= n cur))
                   (assoc-in p [:categories id :spec] {:type :monthly :amount n})
                   p))
               p))
