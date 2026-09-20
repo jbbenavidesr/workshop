@@ -1,0 +1,10 @@
+{"data":{"month":{"month":"2026-07-01","categories":[
+  {"id":"c1","name":"🏠 Arriendo","deleted":false,"hidden":false,
+   "activity":-450000,"budgeted":500000},
+  {"id":"c2","name":"🛡️ Seguro","deleted":false,"hidden":false,
+   "activity":20000,"budgeted":0},
+  {"id":"c3","name":"💤 Vieja","deleted":true,"hidden":false,
+   "activity":-1000,"budgeted":0},
+  {"id":"c4","name":"Inflow: Ready to Assign","deleted":false,"hidden":false,
+   "internal":true,"activity":29044000000,"budgeted":0}
+]}}}

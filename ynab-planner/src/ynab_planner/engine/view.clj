@@ -2,7 +2,8 @@
   (:require [ynab-planner.engine.target :as t]
             [ynab-planner.engine.distribution :as dist]
             [ynab-planner.engine.balance :as bal]
-            [ynab-planner.engine.diff :as diff]))
+            [ynab-planner.engine.diff :as diff]
+            [ynab-planner.engine.history :as hist]))
 
 (defn resolve-category
   "Merge a cached category with the user's plan overrides and derive its numbers."
@@ -11,6 +12,7 @@
         override     (get-in plan [:categories id])
         planned-spec (or (:spec override) (:ynab-spec cache-cat))
         balance      (:balance cache-cat)
+        stats        (hist/stats (:history cache-cat []) plan-month)
         planned      (t/derive-monthly planned-spec balance plan-month)]
     {:id id
      :name (:name cache-cat)
@@ -21,7 +23,9 @@
      ;; :monthly is the display alias consumed by distribute/balance-check; equals :planned
      :monthly      planned
      :ynab-current (t/derive-monthly (:ynab-spec cache-cat) balance plan-month)
-     :planned      planned}))
+     :planned      planned
+     :history      stats
+     :slack        (hist/slack planned stats)}))
 
 (defn pillar-sections
   "Ordered pillar sections for the plan view: each distribution pillar plus its
@@ -36,7 +40,10 @@
 
 (defn build-view [cache plan plan-month]
   (let [income (:income plan)
-        cats   (mapv #(resolve-category % plan plan-month) (:categories cache))
+        hist-by-id (:history cache {})
+        cats   (mapv #(resolve-category (assoc % :history (get hist-by-id (:id %) []))
+                                        plan plan-month)
+                     (:categories cache))
         dist   (dist/distribute cats income (:pillar-targets plan))]
     {:income income
      :synced-at (:synced-at cache)

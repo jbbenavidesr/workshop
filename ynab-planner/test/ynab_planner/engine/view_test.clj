@@ -63,3 +63,20 @@
   (is (true?  (:overridden? (v/resolve-category (first (:categories cache)) plan jun))))
   (is (false? (:overridden? (v/resolve-category (second (:categories cache)) plan jun)))))
 
+(deftest resolve-category-attaches-history-and-slack
+  (let [cache+ (assoc cache :history
+                      {"c1" [{:month "2026-04" :spent 1000000 :budgeted 1500000}
+                             {:month "2026-05" :spent 1400000 :budgeted 1500000}
+                             {:month "2026-06" :spent 9999999 :budgeted 1500000}]})
+        v    (v/build-view cache+ plan jun)
+        c1   (first (filter #(= "c1" (:id %)) (:categories v)))
+        c2   (first (filter #(= "c2" (:id %)) (:categories v)))]
+    ;; jun is the plan month, so 2026-06 is partial and must be excluded
+    (is (= 2 (get-in c1 [:history :n])))
+    (is (= 1200000 (get-in c1 [:history :avg6])))
+    (is (= [1000000 1400000] (get-in c1 [:history :series])))
+    ;; planned 1_600_000 vs typical 1_200_000 -> 400k of padding
+    (is (= 400000 (:slack c1)))
+    ;; no history at all -> no slack claim
+    (is (= 0 (get-in c2 [:history :n])))
+    (is (= 0 (:slack c2)))))
