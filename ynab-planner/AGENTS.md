@@ -1,6 +1,8 @@
 # Working on the YNAB Budget Planner — guidelines for agents
 
 Read `README.md` first for what this tool is and why. This file is *how* to work on it.
+`docs/roadmap.md` is what is left to build, and the known tensions worth reading before
+trusting a number.
 
 ## Mindset
 

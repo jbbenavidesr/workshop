@@ -107,3 +107,7 @@ for the frontend; no JS frameworks.
 ## Status
 
 v1: single-month planning, read-only. Not for multi-month timelines/phases yet.
+
+Each category shows twelve months of spend and its **slack** (planned minus
+typical spend), which is what says whether a target is padded or a quiet
+overdraft. See `docs/roadmap.md` for what is still missing.
