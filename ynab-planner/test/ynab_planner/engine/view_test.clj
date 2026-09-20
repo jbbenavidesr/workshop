@@ -80,3 +80,16 @@
     ;; no history at all -> no slack claim
     (is (= 0 (get-in c2 [:history :n])))
     (is (= 0 (:slack c2)))))
+
+(deftest skipped-categories-leave-the-plan-but-stay-listable
+  (let [plan+ (assoc-in plan [:categories "c2" :skip] true)
+        v     (v/build-view cache plan+ jun)]
+    ;; c2 is 2.000.000 of the 3.600.000 total — skipping must move the balance
+    (is (= ["c1"] (mapv :id (:categories v))))
+    (is (= 1600000 (get-in v [:balance :total])))
+    (is (= :under (get-in v [:balance :status])))
+    ;; ...and it must not show up as a change to make in YNAB
+    (is (= ["c1"] (mapv :id (:diff v))))
+    ;; but the classify page still needs to see it, flagged
+    (is (= ["c1" "c2"] (mapv :id (:all-categories v))))
+    (is (true? (:skip? (second (:all-categories v)))))))

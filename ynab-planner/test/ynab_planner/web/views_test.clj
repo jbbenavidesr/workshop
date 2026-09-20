@@ -12,6 +12,12 @@
                  :history {:n 10 :avg6 1200000 :median 1150000 :max 1800000
                            :series [1000000 1400000 1200000 1100000 1300000 1200000
                                     1150000 1250000 1800000 1200000]}}]
+   :all-categories [{:id "c1" :name "🏠 Arriendo" :group-name "🏡 Hogar"
+                     :pillar :necesario :monthly 1600000 :ynab-current 1500000
+                     :planned 1600000 :slack 400000 :skip? false}
+                    {:id "c9" :name "💳 TC Nu" :group-name "Credit Card Payments"
+                     :pillar nil :monthly 0 :ynab-current 0 :planned 0
+                     :slack 0 :skip? true}]
    :balance {:total 1600000 :income 3600000 :difference 2000000 :status :under}
    :distribution {:pillars [{:pillar :necesario :amount 1600000 :actual-pct 44.4 :ideal-pct 40}]
                   :untagged 0}
@@ -78,10 +84,10 @@
   (let [local-view {:income 3600000
                     :synced-at "2026-06-29T10:00:00Z"
                     :pillar-targets {:necesario 40}
-                    :categories [{:id "u1" :name "Sin pilar" :group-name "🏡 Hogar"
-                                  :pillar nil :monthly 0}
-                                 {:id "t1" :name "Con pilar" :group-name "🏡 Hogar"
-                                  :pillar :necesario :monthly 500000}]}
+                    :all-categories [{:id "u1" :name "Sin pilar" :group-name "🏡 Hogar"
+                                      :pillar nil :monthly 0}
+                                     {:id "t1" :name "Con pilar" :group-name "🏡 Hogar"
+                                      :pillar :necesario :monthly 500000}]}
         html (views/render-classify-page local-view)]
     ;; untagged category appears EXACTLY once (not duplicated under its group)
     (is (= 1 (count (re-seq #"name=\"pillar-u1\"" html)))
@@ -201,3 +207,13 @@
   (let [resp (views/update-response view)]
     (is (= {:text "+400k" :kind "pos"} (get-in resp [:slack "c1"]))
         "formatted server-side so the JS holds no money logic")))
+
+(deftest classify-page-offers-a-skip-toggle-and-groups-the-skipped
+  (let [html (views/render-classify-page view)]
+    ;; every listed category can be taken out of the plan
+    (is (str/includes? html "name=\"skip-c1\""))
+    ;; one already skipped: checked, and gathered under its own legend
+    (is (re-find #"name=\"skip-c9\"[^>]*checked|checked[^>]*name=\"skip-c9\"" html))
+    (is (str/includes? html "Omitidas del plan"))
+    ;; a skipped category must not also nag from the unclassified fieldset
+    (is (= 1 (count (re-seq #"name=\"pillar-c9\"" html))))))

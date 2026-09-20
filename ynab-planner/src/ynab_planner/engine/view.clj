@@ -18,6 +18,7 @@
      :name (:name cache-cat)
      :group-name (:group-name cache-cat)
      :pillar (:pillar override)
+     :skip? (boolean (:skip override))
      :spec planned-spec
      :overridden? (some? (:spec override))
      ;; :monthly is the display alias consumed by distribute/balance-check; equals :planned
@@ -41,13 +42,17 @@
 (defn build-view [cache plan plan-month]
   (let [income (:income plan)
         hist-by-id (:history cache {})
-        cats   (mapv #(resolve-category (assoc % :history (get hist-by-id (:id %) []))
+        all    (mapv #(resolve-category (assoc % :history (get hist-by-id (:id %) []))
                                         plan plan-month)
                      (:categories cache))
+        ;; skipped categories are not part of this plan: they leave the totals,
+        ;; the distribution and the checklist, but the classify page still lists them
+        cats   (filterv (complement :skip?) all)
         dist   (dist/distribute cats income (:pillar-targets plan))]
     {:income income
      :synced-at (:synced-at cache)
      :categories cats
+     :all-categories all
      :pillar-targets (:pillar-targets plan)
      :balance       (bal/balance-check cats income)
      :distribution  dist

@@ -46,3 +46,19 @@
   (if-let [id (get params "id")]
     (drop-spec plan id)
     (reduce drop-spec plan (keys (:categories plan)))))
+
+(defn apply-skips
+  "Mark categories as not part of the plan. The pillar selects are the roster of
+   ids, since a <select> always submits and an unchecked checkbox never does."
+  [plan params]
+  (reduce (fn [p [k _]]
+            (if (str/starts-with? k "pillar-")
+              (let [id (subs k 7)]
+                (if (contains? params (str "skip-" id))
+                  (assoc-in p [:categories id :skip] true)
+                  (let [entry (dissoc (get-in p [:categories id]) :skip)]
+                    (if (seq entry)
+                      (assoc-in p [:categories id] entry)
+                      (update p :categories dissoc id)))))
+              p))
+          plan params))

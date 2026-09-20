@@ -56,15 +56,9 @@ select {
 [data-status="under"]    { color: var(--color-warning);  font-weight: 700; }
 
 /* slack: tinted from the semantic colour itself, so no new tokens are needed */
-[data-slack="pos"] {
-  color: var(--color-positive);
-  background: color-mix(in oklab, var(--color-positive) 12%, var(--color-surface));
-}
-[data-slack="neg"] {
-  color: var(--color-negative);
-  background: color-mix(in oklab, var(--color-negative) 12%, var(--color-surface));
-}
-[data-slack="none"] { color: var(--color-ink-muted); background: var(--color-bg); }
+[data-slack="pos"]  { color: var(--color-positive); }
+[data-slack="neg"]  { color: var(--color-negative); }
+[data-slack="none"] { color: var(--color-ink-muted); font-weight: 400; }
 
 /* a month above its target is spend the plan did not cover */
 .spark rect[data-over] { fill: var(--color-negative); opacity: 0.75; }
@@ -80,10 +74,9 @@ select {
 [data-index="4"] { --pc: var(--pillar-0); }   /* cycle beyond the current four */
 [data-index="5"] { --pc: var(--pillar-1); }
 
-/* pill: a small status token that sits inline with text */
-.pill {
-  font-size: var(--step--1); font-weight: 700; line-height: 1.6;
-  padding-inline: var(--space-2xs); border-radius: var(--space-s);
+/* slack: a bare number; the colour is the whole signal */
+.slack {
+  font-size: var(--step--1); font-weight: 700;
   white-space: nowrap; font-variant-numeric: tabular-nums;
 }
 
@@ -200,8 +193,10 @@ category-row {
 .row-history {
   display: flex; align-items: center; gap: var(--space-2xs);
   margin-block-start: var(--space-3xs);
-  min-inline-size: 0; overflow: hidden;
+  min-inline-size: 0;
 }
+/* slack is the verdict on the row, so it sits alone at the end of the line */
+.row-history > .slack { margin-inline-start: auto; padding-inline-start: var(--space-2xs); }
 .group-tag { font-size: var(--step--1); }
 
 /* settings link card */
@@ -227,14 +222,15 @@ category-row {
 
 /* Mobile-first: the history line sits under the name. With room, it moves up
    beside it and the row collapses to a single line. */
-@media (min-width: 40rem) {
-  /* a fixed history track keeps every amount input on the same x, so the column
-     scans vertically; the name takes what is left and truncates, being the one
-     part still recognisable clipped */
-  category-row {
-    display: grid; grid-template-columns: 1fr 19rem;
-    align-items: center; gap: var(--space-s);
-  }
-  .row-main { min-inline-size: 0; }
-  .row-history { margin-block-start: 0; overflow: visible; }
+/* classify: name, pillar, and a way out of the plan entirely */
+.classify-row {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2xs);
+  padding-block: var(--space-3xs);
 }
+.classify-row > label:first-child { flex: 1; min-inline-size: 8rem; }
+.skip-toggle {
+  display: flex; align-items: center; gap: var(--space-3xs);
+  font-size: var(--step--1); color: var(--color-ink-muted);
+  flex: none; cursor: pointer;
+}
+.classify-row:has(.skip-toggle :checked) > label:first-child { opacity: 0.5; }

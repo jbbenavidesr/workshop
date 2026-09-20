@@ -109,7 +109,7 @@
                :vector-effect "non-scaling-stroke"}])]))
 
 (defn- history-stats [c]
-  (let [{:keys [n avg6 median] mx :max} (:history c)
+  (let [{:keys [n avg6] mx :max} (:history c)
         months (when (pos? (or n 0))
                  ;; an average over two months is not a fact; say so, do not imply it
                  [:span {:data-confidence (when (< n 6) "low")} n "m"])]
@@ -120,15 +120,14 @@
        ;; dots in a row say less than one honest phrase
        (not (pos? (or mx 0))) (list [:span "sin gasto"] months)
        :else (list [:span "prom " [:b (fmt-short avg6)]]
-                   [:span "med " (fmt-short median)]
-                   [:span "m\u00e1x " (fmt-short mx)]
+                   [:span "máx " (fmt-short mx)]
                    months))]))
 
 (defn- slack-kind [s] (cond (pos? s) "pos" (neg? s) "neg" :else "none"))
 
-(defn- slack-pill [c]
+(defn- slack-amount [c]
   (let [s (or (:slack c) 0)]
-    [:span {:class "[ pill ]"
+    [:span {:class "[ slack ]"
             :data-slack (slack-kind s)
             :title (if (zero? s)
                      "Sin gasto registrado \u2014 no hay evidencia de holgura"
@@ -141,7 +140,6 @@
      [:div {:class "[ row-main ]"}
       [:label {:for field}
        (:name c) [:span {:class "[ group-tag ] [ text-muted ]"} " \u00b7 " (:group-name c)]]
-      (slack-pill c)
       [:input {:type "number" :id field :name field :value (:monthly c)
                :inputmode "numeric" :data-id (:id c)}]
       ;; Forms cannot nest, so the revert buttons sit inside #plan-form but submit
@@ -154,7 +152,8 @@
        "\u21ba"]]
      [:div {:class "[ row-history ]"}
       (sparkline c)
-      (history-stats c)]]))
+      (history-stats c)
+      (slack-amount c)]]))
 
 (defn- bar-geometry
   "Geometry for a target-relative pillar bar. actual/target are percentages of
@@ -254,11 +253,19 @@
      (for [p (keys pillar-targets) :let [v (name p)]]
        [:option (cond-> {:value v} (= v current) (assoc :selected "selected")) v])]))
 
+(defn- classify-row [c pillar-targets]
+  [:div {:class "[ classify-row ]"}
+   [:label {:for (str "pillar-" (:id c))} (:name c)]
+   (pillar-select c pillar-targets)
+   [:label {:class "[ skip-toggle ]"}
+    [:input (cond-> {:type "checkbox" :name (str "skip-" (:id c))}
+              (:skip? c) (assoc :checked "checked"))]
+    "omitir"]])
+
 (defn- classify-fieldset [legend cats pillar-targets status]
   [:fieldset (cond-> {:class "[ stack ]"} status (assoc :data-status status))
    [:legend legend]
-   (for [c cats]
-     [:label [:span (:name c)] (pillar-select c pillar-targets)])])
+   (for [c cats] (classify-row c pillar-targets))])
 
 (defn render-settings-page [view]
   (layout {:title "Ajustes"}
@@ -276,17 +283,25 @@
     [:form {:method "post" :action "/sync"} [:button {:type "submit"} "Sincronizar ahora"]]]))
 
 (defn render-classify-page [view]
-  (let [cats     (:categories view)
+  (let [all      (:all-categories view)
         targets  (:pillar-targets view)
-        untagged (filter #(nil? (:pillar %)) cats)
-        tagged   (filter #(some? (:pillar %)) cats)]
+        skipped  (filter :skip? all)
+        planned  (remove :skip? all)
+        untagged (filter #(nil? (:pillar %)) planned)
+        tagged   (filter #(some? (:pillar %)) planned)]
     (layout {:title "Clasificar categorías"}
      [:a {:href "/settings"} "← Volver a ajustes"]
      [:h1 "Clasificar categorías"]
+     [:p {:class "[ text-muted ]"}
+      "Omitir saca una categoría del plan por completo: no suma al total, no entra "
+      "en la distribución y no aparece en la lista de cambios. Para pagos de "
+      "tarjeta y demás plomería que no es gasto."]
      [:form {:method "post" :action "/classify" :class "[ stack ] [ card ]"}
       (when (seq untagged)
         (classify-fieldset "⚠️ Sin clasificar" untagged targets "under"))
       (for [group (distinct (map :group-name tagged))
             :let [gcats (filter #(= group (:group-name %)) tagged)]]
         (classify-fieldset group gcats targets nil))
+      (when (seq skipped)
+        (classify-fieldset "Omitidas del plan" skipped targets nil))
       [:button {:type "submit"} "Guardar clasificación"]])))

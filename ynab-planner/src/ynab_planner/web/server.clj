@@ -75,7 +75,9 @@
 
       [:post "/classify"]
       (let [params (form-params req)]
-        (store/write-plan dir (edit/apply-pillars (store/read-plan dir) params))
+        (store/write-plan dir (-> (store/read-plan dir)
+                                  (edit/apply-pillars params)
+                                  (edit/apply-skips params)))
         (redirect "/classify"))
 
       [:post "/plan/reset"]

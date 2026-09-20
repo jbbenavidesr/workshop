@@ -53,3 +53,16 @@
     ;; unknown / blank id -> no-op (fail-safe: never a surprise wipe)
     (is (= plan (pe/reset-targets plan {"id" "nope"})))
     (is (= plan (pe/reset-targets plan {"id" ""})))))
+
+(deftest apply-skips-marks-and-clears
+  ;; The pillar selects are the roster of ids: a <select> always submits, an
+  ;; unchecked checkbox never does.
+  (let [plan {:categories {"c1" {:pillar :fun} "c2" {:pillar :ahorro :skip true}}}
+        out  (pe/apply-skips plan {"pillar-c1" "fun" "skip-c1" "on"
+                                   "pillar-c2" "ahorro"})]
+    (is (true? (get-in out [:categories "c1" :skip])) "checked -> skipped")
+    (is (nil? (get-in out [:categories "c2" :skip])) "unchecked -> no longer skipped")
+    (is (= :ahorro (get-in out [:categories "c2" :pillar])) "pillar survives"))
+  ;; a skip-only entry is still an entry; an emptied one goes away
+  (let [out (pe/apply-skips {:categories {"c1" {:skip true}}} {"pillar-c1" ""})]
+    (is (nil? (get-in out [:categories "c1"])))))
