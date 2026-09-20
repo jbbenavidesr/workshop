@@ -55,6 +55,23 @@ select {
 [data-status="over"]     { color: var(--color-negative); font-weight: 700; }
 [data-status="under"]    { color: var(--color-warning);  font-weight: 700; }
 
+/* slack: tinted from the semantic colour itself, so no new tokens are needed */
+[data-slack="pos"] {
+  color: var(--color-positive);
+  background: color-mix(in oklab, var(--color-positive) 12%, var(--color-surface));
+}
+[data-slack="neg"] {
+  color: var(--color-negative);
+  background: color-mix(in oklab, var(--color-negative) 12%, var(--color-surface));
+}
+[data-slack="none"] { color: var(--color-ink-muted); background: var(--color-bg); }
+
+/* a month above its target is spend the plan did not cover */
+.spark rect[data-over] { fill: var(--color-negative); opacity: 0.75; }
+
+/* too few months for an average to mean much */
+[data-confidence="low"] { color: var(--color-warning); font-weight: 600; }
+
 /* pillar accent palette, keyed by index (config-safe) */
 [data-index="0"] { --pc: var(--pillar-0); }
 [data-index="1"] { --pc: var(--pillar-1); }
@@ -62,6 +79,32 @@ select {
 [data-index="3"] { --pc: var(--pillar-3); }
 [data-index="4"] { --pc: var(--pillar-0); }   /* cycle beyond the current four */
 [data-index="5"] { --pc: var(--pillar-1); }
+
+/* pill: a small status token that sits inline with text */
+.pill {
+  font-size: var(--step--1); font-weight: 700; line-height: 1.6;
+  padding-inline: var(--space-2xs); border-radius: var(--space-s);
+  white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+
+/* sparkline: a bar chart small enough to read as a texture, not a chart */
+.spark {
+  inline-size: var(--space-xl); block-size: var(--space-s);
+  display: block; flex: none; overflow: visible;
+}
+.spark rect { fill: var(--pc, var(--color-accent)); opacity: 0.55; }
+.spark .target {
+  stroke: var(--color-ink); stroke-width: 1; stroke-dasharray: 2 2; opacity: 0.45;
+}
+.spark .zero { stroke: var(--color-ink-muted); stroke-width: 1; opacity: 0.5; }
+
+/* a run of small labelled numbers */
+.stats {
+  display: flex; gap: var(--space-2xs); min-inline-size: 0;
+  font-size: var(--step--1); color: var(--color-ink-muted);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.stats b { font-weight: 600; color: var(--color-ink); }
 
 /* quiet button: a revert affordance should not shout like a primary action */
 .ghost-btn {
@@ -138,15 +181,28 @@ pillar-card details > category-row:first-of-type { border-block-start: 1px solid
 .pillar-toggle::after { content: "ver categorías"; }
 pillar-card details[open] .pillar-toggle::after { content: "ocultar"; }
 
-/* category row */
+/* category row: what you plan on top, what it has actually cost underneath */
 category-row {
-  display: grid; gap: var(--space-2xs);
+  display: block;
   padding: var(--space-2xs) var(--space-xs);
   border-block-end: 1px solid var(--color-border);
 }
-.row-meta { display: flex; align-items: center; justify-content: end; gap: var(--space-2xs); }
+.row-main {
+  display: flex; align-items: center; gap: var(--space-2xs);
+}
+/* the name yields first: a long category plus its group must not wrap the row
+   onto a third line, which is most of what makes a long list unreadable */
+.row-main > label {
+  flex: 1; min-inline-size: 0;
+  display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.row-main > input[type="number"] { flex: 0 0 11ch; }
+.row-history {
+  display: flex; align-items: center; gap: var(--space-2xs);
+  margin-block-start: var(--space-3xs);
+  min-inline-size: 0; overflow: hidden;
+}
 .group-tag { font-size: var(--step--1); }
-.amount-echo { font-size: var(--step--1); text-align: end; }
 
 /* settings link card */
 .settings-link { display: block; text-decoration: none; font-weight: 600; }
@@ -169,7 +225,16 @@ category-row {
 .diff-line .diff-name { flex: 1; }
 .diff-line:has(:checked) label { opacity: 0.45; text-decoration: line-through; }
 
-/* Mobile-first: stacked. Enhance to two columns on wider viewports. */
+/* Mobile-first: the history line sits under the name. With room, it moves up
+   beside it and the row collapses to a single line. */
 @media (min-width: 40rem) {
-  category-row { grid-template-columns: 1fr 12rem; align-items: center; }
+  /* a fixed history track keeps every amount input on the same x, so the column
+     scans vertically; the name takes what is left and truncates, being the one
+     part still recognisable clipped */
+  category-row {
+    display: grid; grid-template-columns: 1fr 19rem;
+    align-items: center; gap: var(--space-s);
+  }
+  .row-main { min-inline-size: 0; }
+  .row-history { margin-block-start: 0; overflow: visible; }
 }

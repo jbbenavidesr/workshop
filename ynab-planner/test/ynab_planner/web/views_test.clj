@@ -7,13 +7,22 @@
   {:income 3600000 :synced-at "2026-06-27T12:00:00Z"
    :pillar-targets {:necesario 40}
    :categories [{:id "c1" :name "🏠 Arriendo" :group-name "🏡 Hogar"
-                 :pillar :necesario :monthly 1600000 :ynab-current 1500000 :planned 1600000}]
+                 :pillar :necesario :monthly 1600000 :ynab-current 1500000 :planned 1600000
+                 :slack 400000
+                 :history {:n 10 :avg6 1200000 :median 1150000 :max 1800000
+                           :series [1000000 1400000 1200000 1100000 1300000 1200000
+                                    1150000 1250000 1800000 1200000]}}]
    :balance {:total 1600000 :income 3600000 :difference 2000000 :status :under}
    :distribution {:pillars [{:pillar :necesario :amount 1600000 :actual-pct 44.4 :ideal-pct 40}]
                   :untagged 0}
    :pillar-sections {:pillars [{:pillar :necesario :amount 1600000 :actual-pct 44.4 :ideal-pct 40
                                 :categories [{:id "c1" :name "🏠 Arriendo" :group-name "🏡 Hogar"
-                                              :monthly 1600000}]}]
+                                              :monthly 1600000 :planned 1600000 :slack 400000
+                                              :history {:n 10 :avg6 1200000 :median 1150000
+                                                        :max 1800000
+                                                        :series [1000000 1400000 1200000 1100000
+                                                                 1300000 1200000 1150000 1250000
+                                                                 1800000 1200000]}}]}]
                      :untagged-categories [] :untagged 0}
    :diff [{:id "c1" :name "🏠 Arriendo" :group-name "🏡 Hogar" :current 1500000 :planned 1600000}]})
 
@@ -159,3 +168,36 @@
     (is (str/includes? ov-html "value=\"c1\""))
     ;; and the JSON response tells the JS which rows to reveal
     (is (= ["c1"] (:overridden (views/update-response overridden))))))
+
+(deftest fmt-short-is-compact-and-colombian
+  (is (= "·"      (views/fmt-short 0)))
+  (is (= "551k"   (views/fmt-short 551000)))
+  (is (= "2,0M"   (views/fmt-short 2049000)))
+  (is (= "-588k"  (views/fmt-short -588000)))
+  (is (= "820"    (views/fmt-short 820))))
+
+(deftest spark-geometry-spans-zero-series-and-target
+  ;; all positive, target above every bar -> scale reaches the target line
+  (let [g (views/spark-geometry [100 200] 400)]
+    (is (nil? (:zero-y g)) "no negative values, so no zero baseline")
+    (is (= 0.0 (:target-y g)) "the target is the ceiling, so it sits at the top")
+    (is (= 2 (count (:bars g))))
+    (is (every? #(not (:over? %)) (:bars g)))
+    ;; bars grow up from the baseline: the taller value starts higher
+    (is (< (:y (second (:bars g))) (:y (first (:bars g))))))
+  ;; a bar above target is flagged, for the negative tint
+  (let [g (views/spark-geometry [100 900] 400)]
+    (is (= [false true] (mapv :over? (:bars g)))))
+  ;; a refund drops below a zero baseline
+  (let [g (views/spark-geometry [-50 100] 0)]
+    (is (some? (:zero-y g)))
+    (is (nil? (:target-y g)) "no target -> no reference line"))
+  ;; every bar stays inside the box
+  (let [g (views/spark-geometry [0 1200000 300000] 500000)]
+    (is (every? #(and (>= (:y %) 0) (<= (+ (:y %) (:h %)) (:h g))) (:bars g))))
+  (is (nil? (views/spark-geometry [] 100)) "no history -> no sparkline"))
+
+(deftest update-response-carries-rendered-slack
+  (let [resp (views/update-response view)]
+    (is (= {:text "+400k" :kind "pos"} (get-in resp [:slack "c1"]))
+        "formatted server-side so the JS holds no money logic")))

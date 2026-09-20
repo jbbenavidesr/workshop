@@ -40,6 +40,16 @@ function applyView(view) {
   }
   const resetAll = document.querySelector('#reset-all');
   if (resetAll) resetAll.hidden = overridden.size === 0;
+
+  // slack moves with every edit — the engine recomputes and formats it, we place it
+  for (const [id, s] of Object.entries(view.slack)) {
+    const pill = document.querySelector(`category-row[data-id="${id}"] .pill`);
+    if (!pill) continue;
+    pill.textContent = s.text;
+    pill.dataset.slack = s.kind;
+  }
+  // ponytail: the sparkline's target line and over-budget tint still reflect the
+  // amount at page load; they catch up on reload. Send the geometry too if that bites.
 }
 
 function format(n) { return '$' + Number(n).toLocaleString('es-CO'); }

@@ -6,6 +6,56 @@
 ;; Colombian peso formatting uses '.' as the thousands separator.
 (defn- fmt [n] (str "$" (str/replace (str (long n)) #"\B(?=(\d{3})+(?!\d))" ".")))
 
+(defn fmt-short
+  "Compact pesos for dense rows: 2049000 -> 2,0M, 551000 -> 551k, 0 -> a dot.
+   No currency mark — the row is all money and the column is narrow."
+  [n]
+  (let [n (long (or n 0))
+        a (abs n)
+        sg (if (neg? n) "-" "")]
+    (cond
+      (zero? n)      "·"
+      (>= a 1000000) (str sg (str/replace (format "%.1f" (/ a 1e6)) "." ",") "M")
+      (>= a 1000)    (str sg (Math/round (/ a 1000.0)) "k")
+      :else          (str sg a))))
+
+(defn- fmt-signed [n] (if (zero? n) "—" (str (when (pos? n) "+") (fmt-short n))))
+
+(defn- r2 [x] (double (/ (Math/round (* 100.0 (double x))) 100.0)))
+
+(defn spark-geometry
+  "Bars for a spend sparkline, in a 0..w by 0..h user space — CSS does the real
+   sizing, so these are ratios, not pixels. The scale spans zero, the whole
+   series and the planned amount, so the target line always lands inside the box
+   and a refund reads below the baseline."
+  [series planned]
+  (when (seq series)
+    (let [n    (count series)
+          w    (* 4 n)
+          h    20
+          lo   (double (min 0 (reduce min series)))
+          hi   (double (max 1 (reduce max (cons (or planned 0) series))))
+          span (- hi lo)
+          y    (fn [v] (r2 (* h (- 1.0 (/ (- (double v) lo) span)))))
+          bw   (/ (double w) n)
+          tgt? (and planned (pos? planned))]
+      {:w w :h h
+       :zero-y   (when (neg? lo) (y 0))
+       :target-y (when tgt? (y planned))
+       :bars (vec (map-indexed
+                   (fn [i v]
+                     (let [y0 (y (max v 0))
+                           y1 (y (min v 0))
+                           ;; a zero month still gets a visible sliver, nudged up
+                           ;; so the minimum height cannot hang out of the box
+                           bh (max 0.6 (- y1 y0))]
+                       {:x (r2 (+ (* i bw) 0.35))
+                        :w (r2 (- bw 0.7))
+                        :y (r2 (min y0 (- h bh)))
+                        :h (r2 bh)
+                        :over? (boolean (and tgt? (> v planned)))}))
+                   series))})))
+
 (defn- layout [{:keys [title]} & body]
   (clojure.core/str
    "<!doctype html>"
@@ -40,22 +90,71 @@
     [:a {:class "[ card ] [ nudge ]" :data-status "under" :href "/classify"}
      "⚠️ " n " sin clasificar — clasifícalas →"]))
 
+(defn- sparkline
+  "Twelve months of spend as bars, with a dashed line at the planned amount.
+   Decorative: the same numbers follow it in text, so it is hidden from AT."
+  [c]
+  (when-let [{:keys [w h bars zero-y target-y]}
+             (spark-geometry (get-in c [:history :series]) (:planned c))]
+    [:svg {:class "[ spark ]" :viewBox (str "0 0 " w " " h)
+           :preserveAspectRatio "none" :aria-hidden "true" :focusable "false"}
+     (when zero-y
+       [:line {:class "[ zero ]" :x1 0 :x2 w :y1 zero-y :y2 zero-y
+               :vector-effect "non-scaling-stroke"}])
+     (for [b bars]
+       [:rect (cond-> {:x (:x b) :y (:y b) :width (:w b) :height (:h b)}
+                (:over? b) (assoc :data-over "true"))])
+     (when target-y
+       [:line {:class "[ target ]" :x1 0 :x2 w :y1 target-y :y2 target-y
+               :vector-effect "non-scaling-stroke"}])]))
+
+(defn- history-stats [c]
+  (let [{:keys [n avg6 median] mx :max} (:history c)
+        months (when (pos? (or n 0))
+                 ;; an average over two months is not a fact; say so, do not imply it
+                 [:span {:data-confidence (when (< n 6) "low")} n "m"])]
+    [:span {:class "[ stats ]"}
+     (cond
+       (not (pos? (or n 0))) [:span "sin historial"]
+       ;; a savings goal that has never paid out has nothing to average — four
+       ;; dots in a row say less than one honest phrase
+       (not (pos? (or mx 0))) (list [:span "sin gasto"] months)
+       :else (list [:span "prom " [:b (fmt-short avg6)]]
+                   [:span "med " (fmt-short median)]
+                   [:span "m\u00e1x " (fmt-short mx)]
+                   months))]))
+
+(defn- slack-kind [s] (cond (pos? s) "pos" (neg? s) "neg" :else "none"))
+
+(defn- slack-pill [c]
+  (let [s (or (:slack c) 0)]
+    [:span {:class "[ pill ]"
+            :data-slack (slack-kind s)
+            :title (if (zero? s)
+                     "Sin gasto registrado \u2014 no hay evidencia de holgura"
+                     "Holgura: plan menos gasto t\u00edpico")}
+     (fmt-signed s)]))
+
 (defn- category-row [c]
-  [:category-row {:data-id (:id c)}
-   [:label
-    [:span (:name c) " " [:span {:class "[ group-tag ] [ text-muted ]"} "· " (:group-name c)]]
-    [:input {:type "number" :name (str "cat-" (:id c)) :value (:monthly c)
-             :inputmode "numeric" :data-id (:id c)}]]
-   [:span {:class "[ row-meta ]"}
-    [:span {:class "[ amount-echo ] [ text-muted ]"} (fmt (:monthly c))]
-    ;; Forms cannot nest, so the revert buttons sit inside #plan-form but submit
-    ;; #reset-form via the native form= attribute. Always rendered, hidden until
-    ;; the category is actually overridden, so JS can toggle them after an edit.
-    [:button {:type "submit" :form "reset-form" :name "id" :value (:id c)
-              :data-reset "" :hidden (when-not (:overridden? c) "hidden")
-              :class "[ ghost-btn ]"
-              :aria-label (str "Restaurar " (:name c) " a YNAB")}
-     "\u21ba"]]])
+  (let [field (str "cat-" (:id c))]
+    [:category-row {:data-id (:id c)}
+     [:div {:class "[ row-main ]"}
+      [:label {:for field}
+       (:name c) [:span {:class "[ group-tag ] [ text-muted ]"} " \u00b7 " (:group-name c)]]
+      (slack-pill c)
+      [:input {:type "number" :id field :name field :value (:monthly c)
+               :inputmode "numeric" :data-id (:id c)}]
+      ;; Forms cannot nest, so the revert buttons sit inside #plan-form but submit
+      ;; #reset-form via the native form= attribute. Always rendered, hidden until
+      ;; the category is actually overridden, so JS can toggle them after an edit.
+      [:button {:type "submit" :form "reset-form" :name "id" :value (:id c)
+                :data-reset "" :hidden (when-not (:overridden? c) "hidden")
+                :class "[ ghost-btn ]"
+                :aria-label (str "Restaurar " (:name c) " a YNAB")}
+       "\u21ba"]]
+     [:div {:class "[ row-history ]"}
+      (sparkline c)
+      (history-stats c)]]))
 
 (defn- bar-geometry
   "Geometry for a target-relative pillar bar. actual/target are percentages of
@@ -116,7 +215,12 @@
                            :idealPct (:ideal-pct p)})
                   (get-in view [:pillar-sections :pillars]))
    :untagged (get-in view [:pillar-sections :untagged])
-   :overridden (mapv :id (filter :overridden? (:categories view)))})
+   :overridden (mapv :id (filter :overridden? (:categories view)))
+   ;; Rendered server-side so the JS never has to know how a peso is formatted
+   ;; or what counts as slack — it only assigns text and a data attribute.
+   :slack (into {} (for [c (:categories view)
+                         :let [s (or (:slack c) 0)]]
+                     [(:id c) {:text (fmt-signed s) :kind (slack-kind s)}]))})
 
 ;; ---------- Apply page ----------
 
