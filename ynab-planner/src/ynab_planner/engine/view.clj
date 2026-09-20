@@ -10,16 +10,18 @@
   (let [id           (:id cache-cat)
         override     (get-in plan [:categories id])
         planned-spec (or (:spec override) (:ynab-spec cache-cat))
-        balance      (:balance cache-cat)]
+        balance      (:balance cache-cat)
+        planned      (t/derive-monthly planned-spec balance plan-month)]
     {:id id
      :name (:name cache-cat)
      :group-name (:group-name cache-cat)
      :pillar (:pillar override)
      :spec planned-spec
+     :overridden? (some? (:spec override))
      ;; :monthly is the display alias consumed by distribute/balance-check; equals :planned
-     :monthly      (t/derive-monthly planned-spec balance plan-month)
+     :monthly      planned
      :ynab-current (t/derive-monthly (:ynab-spec cache-cat) balance plan-month)
-     :planned      (t/derive-monthly planned-spec balance plan-month)}))
+     :planned      planned}))
 
 (defn pillar-sections
   "Ordered pillar sections for the plan view: each distribution pillar plus its

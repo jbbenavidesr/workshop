@@ -141,3 +141,21 @@
 (deftest pillar-card-has-toggle-hint
   (let [html (views/render-plan-page view)]
     (is (str/includes? html "pillar-toggle"))))
+
+(deftest plan-page-renders-revert-affordances
+  (let [overridden (-> view
+                       (assoc-in [:categories 0 :overridden?] true)
+                       (assoc-in [:pillar-sections :pillars 0 :categories 0 :overridden?] true))
+        base-html  (views/render-plan-page view)
+        ov-html    (views/render-plan-page overridden)
+        hiddens    #(count (re-seq #"hidden=\"hidden\"" %))]
+    ;; the revert target form exists and is not nested inside the plan form
+    (is (str/includes? base-html "action=\"/plan/reset\""))
+    (is (str/includes? base-html "form=\"reset-form\""))
+    ;; nothing overridden -> row button and "reset all" both hidden
+    (is (= 2 (hiddens base-html)))
+    ;; one override -> both revealed, row button carries the category id
+    (is (zero? (hiddens ov-html)))
+    (is (str/includes? ov-html "value=\"c1\""))
+    ;; and the JSON response tells the JS which rows to reveal
+    (is (= ["c1"] (:overridden (views/update-response overridden))))))

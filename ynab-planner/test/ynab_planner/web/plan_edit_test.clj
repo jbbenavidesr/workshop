@@ -34,3 +34,22 @@
         out (pe/apply-pillars plan {"pillar-c1" "" "pillar-c2" "ahorro"})]
     (is (nil? (get-in out [:categories "c1" :pillar])))            ; blank -> cleared
     (is (= :ahorro (get-in out [:categories "c2" :pillar])))))     ; set
+
+(deftest reset-targets-drops-specs-keeps-pillars
+  (let [plan {:categories {"c1" {:pillar :ahorro :spec {:type :monthly :amount 5}}
+                           "c2" {:spec {:type :monthly :amount 9}}
+                           "c3" {:pillar :fun}}}]
+    ;; one category: spec goes, pillar stays (YNAB has no pillars to reset to)
+    (let [out (pe/reset-targets plan {"id" "c1"})]
+      (is (= {:pillar :ahorro} (get-in out [:categories "c1"])))
+      (is (some? (get-in out [:categories "c2" :spec])) "others untouched"))
+    ;; nothing left in the entry -> drop the entry
+    (is (nil? (get-in (pe/reset-targets plan {"id" "c2"}) [:categories "c2"])))
+    ;; no id -> reset every target
+    (let [out (pe/reset-targets plan {})]
+      (is (= {:pillar :ahorro} (get-in out [:categories "c1"])))
+      (is (nil? (get-in out [:categories "c2"])))
+      (is (= {:pillar :fun} (get-in out [:categories "c3"]))))
+    ;; unknown / blank id -> no-op (fail-safe: never a surprise wipe)
+    (is (= plan (pe/reset-targets plan {"id" "nope"})))
+    (is (= plan (pe/reset-targets plan {"id" ""})))))

@@ -58,3 +58,8 @@
     (is (contains? view :pillar-sections))
     (is (= {:necesario 40 :ahorro 20} (:pillar-targets view)))
     (is (= 2 (count (:pillars (:pillar-sections view)))))))
+
+(deftest resolve-category-flags-overrides
+  (is (true?  (:overridden? (v/resolve-category (first (:categories cache)) plan jun))))
+  (is (false? (:overridden? (v/resolve-category (second (:categories cache)) plan jun)))))
+

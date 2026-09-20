@@ -32,6 +32,14 @@ function applyView(view) {
 
   const badge = document.querySelector('#diff-count');
   if (badge) badge.textContent = view.diffCount;
+
+  // reveal a revert button only for categories the plan actually overrides
+  const overridden = new Set(view.overridden);
+  for (const btn of document.querySelectorAll('[data-reset]')) {
+    btn.hidden = !overridden.has(btn.value);
+  }
+  const resetAll = document.querySelector('#reset-all');
+  if (resetAll) resetAll.hidden = overridden.size === 0;
 }
 
 function format(n) { return '$' + Number(n).toLocaleString('es-CO'); }

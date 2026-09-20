@@ -63,6 +63,14 @@ select {
 [data-index="4"] { --pc: var(--pillar-0); }   /* cycle beyond the current four */
 [data-index="5"] { --pc: var(--pillar-1); }
 
+/* quiet button: a revert affordance should not shout like a primary action */
+.ghost-btn {
+  background: none; color: var(--color-ink-muted);
+  padding: var(--space-3xs) var(--space-2xs);
+  border: 1px solid var(--color-border); border-radius: var(--radius);
+}
+.ghost-btn:hover { color: var(--color-ink); border-color: var(--color-ink-muted); }
+
 /* ============ App-specific tweaks (last) ============ */
 
 /* balance summary */
@@ -136,6 +144,7 @@ category-row {
   padding: var(--space-2xs) var(--space-xs);
   border-block-end: 1px solid var(--color-border);
 }
+.row-meta { display: flex; align-items: center; justify-content: end; gap: var(--space-2xs); }
 .group-tag { font-size: var(--step--1); }
 .amount-echo { font-size: var(--step--1); text-align: end; }
 
@@ -148,6 +157,8 @@ category-row {
   padding: var(--space-s); border-radius: var(--radius);
   background: var(--color-accent); color: var(--color-surface); font-weight: 700;
 }
+
+#reset-all { display: block; margin-inline: auto; }
 
 /* apply checklist */
 .diff-list { list-style: none; padding-inline-start: 0; }

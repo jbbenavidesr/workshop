@@ -31,3 +31,18 @@
                   (assoc-in p [:categories id :pillar] (keyword v))))
               p))
           plan params))
+
+(defn- drop-spec [plan id]
+  (let [entry (dissoc (get-in plan [:categories id]) :spec)]
+    (if (seq entry)
+      (assoc-in plan [:categories id] entry)
+      (update plan :categories dissoc id))))
+
+(defn reset-targets
+  "Discard target overrides, back to what YNAB says. Pillar tags survive — YNAB
+   has no pillars, so there is nothing to reset them to. An \"id\" param resets
+   that one category; no id resets all of them."
+  [plan params]
+  (if-let [id (get params "id")]
+    (drop-spec plan id)
+    (reduce drop-spec plan (keys (:categories plan)))))

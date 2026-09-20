@@ -46,7 +46,16 @@
     [:span (:name c) " " [:span {:class "[ group-tag ] [ text-muted ]"} "· " (:group-name c)]]
     [:input {:type "number" :name (str "cat-" (:id c)) :value (:monthly c)
              :inputmode "numeric" :data-id (:id c)}]]
-   [:span {:class "[ amount-echo ] [ text-muted ]"} (fmt (:monthly c))]])
+   [:span {:class "[ row-meta ]"}
+    [:span {:class "[ amount-echo ] [ text-muted ]"} (fmt (:monthly c))]
+    ;; Forms cannot nest, so the revert buttons sit inside #plan-form but submit
+    ;; #reset-form via the native form= attribute. Always rendered, hidden until
+    ;; the category is actually overridden, so JS can toggle them after an edit.
+    [:button {:type "submit" :form "reset-form" :name "id" :value (:id c)
+              :data-reset "" :hidden (when-not (:overridden? c) "hidden")
+              :class "[ ghost-btn ]"
+              :aria-label (str "Restaurar " (:name c) " a YNAB")}
+     "\u21ba"]]])
 
 (defn- bar-geometry
   "Geometry for a target-relative pillar bar. actual/target are percentages of
@@ -89,8 +98,12 @@
       [:div#pillars {:class "[ stack ]"}
        (map-indexed pillar-card (:pillars sections))]
       [:noscript [:button {:type "submit"} "Recalcular"]]]
+     [:form#reset-form {:method "post" :action "/plan/reset"}]
      [:a {:class "[ cta ]" :href "/apply"}
-      "Ver cambios para aplicar → " [:span#diff-count (count (:diff view))]])))
+      "Ver cambios para aplicar → " [:span#diff-count (count (:diff view))]]
+     [:button#reset-all {:type "submit" :form "reset-form" :class "[ ghost-btn ]"
+                         :hidden (when-not (some :overridden? (:categories view)) "hidden")}
+      "\u21ba Restaurar todo a YNAB"])))
 
 (defn update-response
   "JSON-friendly subset returned after a plan edit, for the JS controller."
@@ -102,7 +115,8 @@
                            :actualPct (:actual-pct p)
                            :idealPct (:ideal-pct p)})
                   (get-in view [:pillar-sections :pillars]))
-   :untagged (get-in view [:pillar-sections :untagged])})
+   :untagged (get-in view [:pillar-sections :untagged])
+   :overridden (mapv :id (filter :overridden? (:categories view)))})
 
 ;; ---------- Apply page ----------
 

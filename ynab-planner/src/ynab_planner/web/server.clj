@@ -20,6 +20,12 @@
                [(URLDecoder/decode k "UTF-8")
                 (URLDecoder/decode (or v "") "UTF-8")]))))
 
+(defn- form-params
+  "Parsed POST params. A form with no successful controls (the reset-all button
+   carries no name) sends an empty body, which http-kit reports as nil."
+  [req]
+  (parse-form (if-let [b (:body req)] (slurp b) "")))
+
 (defn- current-view [dir]
   (let [cache (or (store/read-cache dir) {:synced-at nil :groups [] :categories []})
         plan  (store/read-plan dir)]
@@ -52,7 +58,7 @@
       [:get "/classify"] (html (views/render-classify-page (current-view dir)))
 
       [:post "/plan/update"]
-      (let [params (parse-form (slurp (:body req)))
+      (let [params (form-params req)
             before (before-monthly dir)
             plan'  (edit/apply-amounts (store/read-plan dir) before params)]
         (store/write-plan dir plan')
@@ -63,14 +69,19 @@
             (redirect "/"))))
 
       [:post "/income"]
-      (let [params (parse-form (slurp (:body req)))]
+      (let [params (form-params req)]
         (store/write-plan dir (edit/apply-income (store/read-plan dir) params))
         (redirect "/settings"))
 
       [:post "/classify"]
-      (let [params (parse-form (slurp (:body req)))]
+      (let [params (form-params req)]
         (store/write-plan dir (edit/apply-pillars (store/read-plan dir) params))
         (redirect "/classify"))
+
+      [:post "/plan/reset"]
+      (let [params (form-params req)]
+        (store/write-plan dir (edit/reset-targets (store/read-plan dir) params))
+        (redirect "/"))
 
       [:post "/sync"]
       (do (sync/sync-budget! {:now (str (Instant/now))
