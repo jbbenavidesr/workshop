@@ -25,6 +25,7 @@
                                :goal-target (mu->pesos (:goal_target c))
                                :goal-target-month (:goal_target_month c)
                                :goal-cadence (:goal_cadence c)
+                               :goal-cadence-frequency (:goal_cadence_frequency c)
                                :goal-under-funded (mu->pesos (:goal_under_funded c))})})]
     {:synced-at synced-at
      :groups (mapv (fn [g] {:id (:id g) :name (:name g)}) groups)

@@ -23,10 +23,14 @@
 (defmethod derive-monthly :balance-rolling [spec _ _] (:monthly spec))
 
 (defmethod derive-monthly :needed-cadence [spec _ _]
-  (case (:cadence spec)
-    :yearly (round-div (:amount spec) 12)
-    :weekly (round-div (* (:amount spec) 52) 12)
-    (:amount spec)))
+  ;; :every is how many periods pass between occurrences — "every 2 months"
+  ;; costs half of "every month". Absent means every period, the common case.
+  (let [n (or (:every spec) 1)]
+    (case (:cadence spec)
+      :yearly  (round-div (:amount spec) (* 12 n))
+      :weekly  (round-div (* (:amount spec) 52) (* 12 n))
+      :monthly (round-div (:amount spec) n)
+      (:amount spec))))
 
 (defmethod derive-monthly :balance-by-date [spec balance plan-month]
   (let [target    (:target spec)

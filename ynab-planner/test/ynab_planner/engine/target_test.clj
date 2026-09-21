@@ -32,3 +32,17 @@
     (is (= 0 (t/derive-monthly {:type :balance-by-date :target 1000000 :date "2026-09"} 5000000 jun))))
   (testing "date in the past collapses to one month"
     (is (= 1000000 (t/derive-monthly {:type :balance-by-date :target 1000000 :date "2026-01"} 0 jun)))))
+
+(deftest needed-cadence-every-n-periods
+  (testing ":every divides the monthly share — 300.000 every 2 months is 150.000"
+    (is (= 150000 (t/derive-monthly {:type :needed-cadence :amount 300000
+                                     :cadence :monthly :every 2} 0 jun))))
+  (testing "yearly every 2 years spreads over 24 months"
+    (is (= 20833 (t/derive-monthly {:type :needed-cadence :amount 500000
+                                    :cadence :yearly :every 2} 0 jun))))
+  (testing "weekly every 2 weeks halves the weekly rate"
+    (is (= 216667 (t/derive-monthly {:type :needed-cadence :amount 100000
+                                     :cadence :weekly :every 2} 0 jun))))
+  (testing "a missing :every behaves exactly as before"
+    (is (= 41667 (t/derive-monthly {:type :needed-cadence :amount 500000
+                                    :cadence :yearly} 0 jun)))))
