@@ -20,7 +20,7 @@ def read_token(token_file: Path | None = None) -> str:
         if token != token.strip() or "\n" in token or "\r" in token:
             raise CredentialError("YNAB_TOKEN debe contener una sola línea sin espacios alrededor.")
         return token
-    path = token_file or Path(os.environ.get("YNAB_TOKEN_FILE", "~/.config/ynab-read/token")).expanduser()
+    path = token_file or Path(os.environ.get("YNAB_TOKEN_FILE", "~/.config/ynab-cli/token")).expanduser()
     try:
         metadata = path.lstat()
         if not stat.S_ISREG(metadata.st_mode) or metadata.st_mode & 0o077:

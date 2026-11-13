@@ -1,9 +1,11 @@
 # YNAB CLI
 
-Small, reusable **read-only** CLI for exploring a YNAB plan. Uses the
-[official YNAB Python SDK](https://github.com/ynab/ynab-sdk-python), not a
-Hermes-specific integration. It sits beside `ynab-planner/`, which remains a
-separate browser-based planning app.
+A small, reusable CLI for exploring a YNAB plan. **All current commands are
+read-only.** It uses the
+[official YNAB Python SDK](https://github.com/ynab/ynab-sdk-python) and
+[Typer](https://typer.tiangolo.com/), not a Hermes-specific integration. It
+sits beside `ynab-planner/`, which remains a separate browser-based planning
+app.
 
 ## Setup
 
@@ -21,19 +23,19 @@ uv sync --locked
 and the development test dependencies from the committed `uv.lock`. After
 changing dependencies, run `uv lock` and commit the updated lockfile.
 
-For a local credential, create `~/.config/ynab-read/token` containing only the
+For a local credential, create `~/.config/ynab-cli/token` containing only the
 token, permissions `0600`. Alternatively set `YNAB_TOKEN` or `YNAB_TOKEN_FILE`
 to a path outside the repository. Do not paste the token into chat, shell
 arguments, or version-controlled `.env` files.
 
 ```bash
-uv run --locked ynab-read plans
-uv run --locked ynab-read settings
-uv run --locked ynab-read accounts
-uv run --locked ynab-read categories
-uv run --locked ynab-read month --month 2026-11
-uv run --locked ynab-read transactions --since 2026-11-01 --limit 50
-uv run --locked ynab-read --help
+uv run --locked ynab-cli plans
+uv run --locked ynab-cli settings
+uv run --locked ynab-cli accounts
+uv run --locked ynab-cli categories
+uv run --locked ynab-cli month --month 2026-11
+uv run --locked ynab-cli transactions --since 2026-11-01 --limit 50
+uv run --locked ynab-cli --help
 uv run --locked pytest
 ```
 
