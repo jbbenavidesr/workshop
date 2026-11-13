@@ -4,15 +4,19 @@ from datetime import date
 from unittest.mock import MagicMock, patch
 
 import pytest
+from typer.testing import CliRunner
 
-from ynab_read import cli, client
+from ynab_cli import cli, client
+
+runner = CliRunner()
 
 
-def test_no_token_reports_instructions(tmp_path, monkeypatch, capsys):
+def test_no_token_reports_instructions(tmp_path, monkeypatch):
     monkeypatch.delenv("YNAB_TOKEN", raising=False)
     monkeypatch.setenv("YNAB_TOKEN_FILE", str(tmp_path / "missing"))
-    assert cli.main(["plans"]) == 1
-    assert "Falta el token" in capsys.readouterr().err
+    result = runner.invoke(cli.app, ["plans"])
+    assert result.exit_code == 1
+    assert "Falta el token" in result.output
 
 
 def test_token_file_rejects_insecure_permissions_and_symlinks(tmp_path, monkeypatch):
@@ -46,10 +50,9 @@ def test_token_environment_override(tmp_path, monkeypatch):
 ])
 def test_invalid_arguments_never_call_api(argv):
     with patch.object(cli, "query") as query:
-        with pytest.raises(SystemExit) as exc:
-            cli.main(argv)
-        assert exc.value.code == 2
-        query.assert_not_called()
+        result = runner.invoke(cli.app, argv)
+    assert result.exit_code == 2, result.output
+    query.assert_not_called()
 
 
 @pytest.mark.parametrize("command,api_class,method", [
@@ -79,7 +82,27 @@ def test_only_sdk_get_methods_are_called(command, api_class, method, monkeypatch
         assert output == {"ok": True}
 
 
-def test_cli_json_output(capsys):
+def test_cli_json_output():
     with patch.object(cli, "query", return_value={"plans": []}):
-        assert cli.main(["plans"]) == 0
-    assert '"plans": []' in capsys.readouterr().out
+        result = runner.invoke(cli.app, ["plans"])
+    assert result.exit_code == 0, result.output
+    assert '"plans": []' in result.output
+
+
+def test_each_command_routes_to_client():
+    commands = [
+        (["plans"], "plans", {}),
+        (["settings"], "settings", {}),
+        (["accounts"], "accounts", {}),
+        (["categories"], "categories", {}),
+        (["months"], "months", {}),
+        (["month", "--month", "2026-11"], "month", {"month": date(2026, 11, 1)}),
+        (["transactions", "--since", "2026-11-01"], "transactions", {"since": date(2026, 11, 1)}),
+        (["scheduled"], "scheduled", {}),
+    ]
+    for argv, expected, options in commands:
+        with patch.object(cli, "query", return_value={"ok": True}) as query:
+            result = runner.invoke(cli.app, argv)
+        assert result.exit_code == 0, (argv, result.output, result.exception)
+        assert query.call_args.args[0] == expected
+        assert query.call_args.kwargs.items() >= options.items()

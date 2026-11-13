@@ -3,17 +3,20 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "ynab-read-cli"
+name = "ynab-cli"
 version = "0.1.0"
-description = "Small read-only CLI for exploring YNAB plans"
+description = "Small CLI for exploring YNAB plans"
 requires-python = ">=3.10"
-dependencies = ["ynab>=5.0,<6"]
+dependencies = [
+    "typer>=0.15,<1",
+    "ynab>=5.0,<6",
+]
 
 [dependency-groups]
 dev = ["pytest>=8"]
 
 [project.scripts]
-ynab-read = "ynab_read.cli:main"
+ynab-cli = "ynab_cli.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
