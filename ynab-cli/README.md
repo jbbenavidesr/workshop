@@ -7,16 +7,19 @@ separate browser-based planning app.
 
 ## Setup
 
-Requires Python 3.10+ and a YNAB personal access token (Account Settings →
-Developer Settings → New Token). The token grants **write access** at the YNAB
-level; only this CLI is read-only. Never commit the token or budget data to this
-public repository.
+Requires Python 3.10+, [uv](https://docs.astral.sh/uv/getting-started/installation/),
+and a YNAB personal access token (Account Settings → Developer Settings → New
+Token). The token grants **write access** at the YNAB level; only this CLI is
+read-only. Never commit the token or budget data to this public repository.
 
 ```bash
 cd ynab-cli
-python3 -m venv .venv
-.venv/bin/python -m pip install -e '.[test]'
+uv sync --locked
 ```
+
+`uv sync` creates a project-local `.venv` and installs the CLI, the official SDK,
+and the development test dependencies from the committed `uv.lock`. After
+changing dependencies, run `uv lock` and commit the updated lockfile.
 
 For a local credential, create `~/.config/ynab-read/token` containing only the
 token, permissions `0600`. Alternatively set `YNAB_TOKEN` or `YNAB_TOKEN_FILE`
@@ -24,14 +27,14 @@ to a path outside the repository. Do not paste the token into chat, shell
 arguments, or version-controlled `.env` files.
 
 ```bash
-.venv/bin/ynab-read plans
-.venv/bin/ynab-read settings
-.venv/bin/ynab-read accounts
-.venv/bin/ynab-read categories
-.venv/bin/ynab-read month --month 2026-11
-.venv/bin/ynab-read transactions --since 2026-11-01 --limit 50
-.venv/bin/ynab-read --help
-.venv/bin/python -m pytest
+uv run --locked ynab-read plans
+uv run --locked ynab-read settings
+uv run --locked ynab-read accounts
+uv run --locked ynab-read categories
+uv run --locked ynab-read month --month 2026-11
+uv run --locked ynab-read transactions --since 2026-11-01 --limit 50
+uv run --locked ynab-read --help
+uv run --locked pytest
 ```
 
 `--plan UUID` chooses a different plan; default is `last-used`. Other commands:
