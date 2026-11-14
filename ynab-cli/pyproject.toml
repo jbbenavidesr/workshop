@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "ynab-cli"
 version = "0.1.0"
-description = "Small CLI for exploring YNAB plans"
+description = "Read-only YNAB toolkit for planning conversations"
 requires-python = ">=3.10"
 dependencies = [
     "typer>=0.15,<1",

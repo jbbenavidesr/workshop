@@ -1,1 +1,1 @@
-"""Read-only YNAB CLI using the official Python SDK."""
+"""Read-only YNAB toolkit: generic reads plus pure planning functions."""
