@@ -1,8 +1,8 @@
-"""Command-line interface for exploring YNAB; currently read-only."""
+"""Read-only YNAB command-line interface."""
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime, timezone
 import json
 from typing import Annotated
 from uuid import UUID
@@ -10,6 +10,7 @@ from uuid import UUID
 import typer
 import ynab
 
+from ynab_cli import core
 from ynab_cli.client import CredentialError, query
 
 app = typer.Typer(help="Explora YNAB usando el SDK oficial (por ahora, solo consultas).", no_args_is_help=True)
@@ -37,12 +38,16 @@ def parse_month(value: str) -> date:
 Plan = Annotated[str, typer.Option("--plan", callback=validate_plan, help="UUID o last-used (predeterminado)")]
 
 
-def show(
+def emit(data) -> None:
+    typer.echo(json.dumps(data, ensure_ascii=False, indent=2))
+
+
+def fetch(
     command: str, plan: str = "last-used", *, month: date | None = None,
     since: date | None = None, until: date | None = None, limit: int = 50,
-) -> None:
+):
     try:
-        data = query(command, plan, month=month, since=since, until=until, limit=limit)
+        return query(command, plan, month=month, since=since, until=until, limit=limit)
     except CredentialError as exc:
         typer.echo(f"Error: {exc}", err=True)
         raise typer.Exit(1) from None
@@ -50,7 +55,10 @@ def show(
         messages = {401: "token inválido o revocado", 403: "acceso denegado", 404: "recurso no encontrado", 429: "límite de consultas alcanzado"}
         typer.echo(f"YNAB HTTP {exc.status}: {messages.get(exc.status, 'error de API')}", err=True)
         raise typer.Exit(1) from None
-    typer.echo(json.dumps(data, ensure_ascii=False, indent=2))
+
+
+def show(command: str, plan: str = "last-used", **options) -> None:
+    emit(fetch(command, plan, **options))
 
 
 @app.command()
@@ -109,6 +117,43 @@ def transactions(
 def scheduled(plan: Plan = "last-used") -> None:
     """Consulta transacciones programadas."""
     show("scheduled", plan)
+
+
+JsonIn = Annotated[typer.FileText, typer.Argument(help="Archivo JSON o - para stdin")]
+
+
+def run(compute) -> None:
+    try:
+        emit(compute())
+    except (ValueError, KeyError, TypeError) as exc:
+        typer.echo(f"Error: {exc}", err=True)
+        raise typer.Exit(1) from None
+
+
+@app.command()
+def snapshot(plan: Plan = "last-used") -> None:
+    """Foto normalizada de categorías y targets (pesos enteros, mes actual)."""
+    retrieved_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    data = fetch("categories", plan)
+    run(lambda: core.normalize(data, plan_id=plan, retrieved_at=retrieved_at))
+
+
+@app.command()
+def spread(source: JsonIn = "-") -> None:
+    """Reparte un monto: {amount, available?, periods} o {amount, available?, from, to}."""
+    run(lambda: core.spread(json.load(source)))
+
+
+@app.command()
+def evaluate(source: JsonIn = "-") -> None:
+    """Totales de un plan {income, items:[{category_id, monthly_amount, pillar?}]} contra el ingreso."""
+    run(lambda: core.evaluate(json.load(source)))
+
+
+@app.command()
+def diff(before: JsonIn, after: JsonIn) -> None:
+    """Cambios entre dos planes o listas de ítems, por category_id."""
+    run(lambda: core.diff(json.load(before), json.load(after)))
 
 
 def main() -> None:
