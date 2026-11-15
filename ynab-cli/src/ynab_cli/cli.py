@@ -1,4 +1,4 @@
-"""Read-only YNAB command-line interface."""
+"""Read-only YNAB command-line interface: parse, validate, call, emit."""
 
 from __future__ import annotations
 
@@ -8,96 +8,70 @@ from typing import Annotated
 from uuid import UUID
 
 import typer
-import ynab
 
-from ynab_cli import core
-from ynab_cli.client import CredentialError, query
+from ynab_cli import client, core
 
 app = typer.Typer(help="Explora YNAB usando el SDK oficial (por ahora, solo consultas).", no_args_is_help=True)
 
 
 def validate_plan(value: str) -> str:
-    if value == "last-used":
-        return value
-    try:
-        UUID(value)
-    except ValueError:
-        raise typer.BadParameter("Usa un UUID o 'last-used'.") from None
+    if value != "last-used":
+        try:
+            UUID(value)
+        except ValueError:
+            raise typer.BadParameter("Usa un UUID o 'last-used'.") from None
     return value
 
 
-def parse_month(value: str) -> date:
-    try:
-        if len(value) != 7 or value[4] != "-":
-            raise ValueError
-        return date.fromisoformat(value + "-01")
-    except ValueError:
-        raise typer.BadParameter("Mes inválido: usa YYYY-MM.") from None
-
-
 Plan = Annotated[str, typer.Option("--plan", callback=validate_plan, help="UUID o last-used (predeterminado)")]
+JsonIn = Annotated[typer.FileText, typer.Argument(help="Archivo JSON o - para stdin")]
 
 
-def emit(data) -> None:
-    typer.echo(json.dumps(data, ensure_ascii=False, indent=2))
-
-
-def fetch(
-    command: str, plan: str = "last-used", *, month: date | None = None,
-    since: date | None = None, until: date | None = None, limit: int = 50,
-):
+def run(compute) -> None:
     try:
-        return query(command, plan, month=month, since=since, until=until, limit=limit)
-    except CredentialError as exc:
+        typer.echo(json.dumps(compute(), ensure_ascii=False, indent=2))
+    except (client.YnabError, ValueError) as exc:
         typer.echo(f"Error: {exc}", err=True)
         raise typer.Exit(1) from None
-    except ynab.ApiException as exc:
-        messages = {401: "token inválido o revocado", 403: "acceso denegado", 404: "recurso no encontrado", 429: "límite de consultas alcanzado"}
-        typer.echo(f"YNAB HTTP {exc.status}: {messages.get(exc.status, 'error de API')}", err=True)
-        raise typer.Exit(1) from None
-
-
-def show(command: str, plan: str = "last-used", **options) -> None:
-    emit(fetch(command, plan, **options))
 
 
 @app.command()
 def plans() -> None:
     """Lista los planes disponibles."""
-    show("plans")
+    run(client.plans)
 
 
 @app.command()
 def settings(plan: Plan = "last-used") -> None:
     """Consulta ajustes, incluida la moneda del plan."""
-    show("settings", plan)
+    run(lambda: client.settings(plan))
 
 
 @app.command()
 def accounts(plan: Plan = "last-used") -> None:
     """Lista las cuentas del plan."""
-    show("accounts", plan)
+    run(lambda: client.accounts(plan))
 
 
 @app.command()
 def categories(plan: Plan = "last-used") -> None:
     """Lista los grupos y categorías."""
-    show("categories", plan)
+    run(lambda: client.categories(plan))
 
 
 @app.command()
 def months(plan: Plan = "last-used") -> None:
     """Lista los meses del plan."""
-    show("months", plan)
+    run(lambda: client.months(plan))
 
 
 @app.command()
 def month(
-    month: Annotated[str, typer.Option("--month", help="Mes YYYY-MM")],
+    month: Annotated[datetime, typer.Option("--month", formats=["%Y-%m"], help="Mes YYYY-MM")],
     plan: Plan = "last-used",
 ) -> None:
     """Consulta un mes concreto y sus categorías."""
-    show("month", plan, month=parse_month(month))
+    run(lambda: client.month(plan, month.date()))
 
 
 @app.command()
@@ -110,32 +84,20 @@ def transactions(
     """Consulta transacciones del plan."""
     if since and until and since > until:
         raise typer.BadParameter("--since debe ser anterior o igual a --until", param_hint="--since")
-    show("transactions", plan, since=since, until=until, limit=limit)
+    run(lambda: core.take(client.transactions(plan, since, until), "transactions", limit))
 
 
 @app.command()
 def scheduled(plan: Plan = "last-used") -> None:
     """Consulta transacciones programadas."""
-    show("scheduled", plan)
-
-
-JsonIn = Annotated[typer.FileText, typer.Argument(help="Archivo JSON o - para stdin")]
-
-
-def run(compute) -> None:
-    try:
-        emit(compute())
-    except (ValueError, KeyError, TypeError) as exc:
-        typer.echo(f"Error: {exc}", err=True)
-        raise typer.Exit(1) from None
+    run(lambda: client.scheduled(plan))
 
 
 @app.command()
 def snapshot(plan: Plan = "last-used") -> None:
     """Foto normalizada de categorías y targets (pesos enteros, mes actual)."""
     retrieved_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    data = fetch("categories", plan)
-    run(lambda: core.normalize(data, plan_id=plan, retrieved_at=retrieved_at))
+    run(lambda: core.normalize(client.categories(plan), plan_id=plan, retrieved_at=retrieved_at))
 
 
 @app.command()
@@ -154,11 +116,3 @@ def evaluate(source: JsonIn = "-") -> None:
 def diff(before: JsonIn, after: JsonIn) -> None:
     """Cambios entre dos planes o listas de ítems, por category_id."""
     run(lambda: core.diff(json.load(before), json.load(after)))
-
-
-def main() -> None:
-    app()
-
-
-if __name__ == "__main__":
-    main()
