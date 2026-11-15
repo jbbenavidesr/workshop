@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from datetime import date
+from collections import defaultdict
+from datetime import date, datetime
 from typing import Any
 
 TARGET_TYPES = {
@@ -82,13 +83,22 @@ def _money(value: Any, name: str) -> int:
     return value
 
 
+def take(data: dict[str, Any], key: str, limit: int) -> dict[str, Any]:
+    """Keep the first `limit` items of data[key], recording how many matched."""
+    items = data[key]
+    return data | {key: items[:limit], "total_matching_count": len(items), "returned_count": min(limit, len(items))}
+
+
 def _month(value: Any) -> date:
-    if not isinstance(value, str) or len(value) != 7:
-        raise ValueError(f"Mes inválido {value!r}: usa YYYY-MM.")
-    return date.fromisoformat(value + "-01")
+    try:
+        return datetime.strptime(value, "%Y-%m").date()
+    except (TypeError, ValueError):
+        raise ValueError(f"Mes inválido {value!r}: usa YYYY-MM.") from None
 
 
 def spread(payload: dict[str, Any]) -> dict[str, int]:
+    if not isinstance(payload, dict):
+        raise ValueError("Se esperaba un objeto JSON.")
     amount = _money(payload.get("amount"), "amount")
     available = payload.get("available", 0)
     if type(available) is not int:
@@ -109,6 +119,8 @@ def spread(payload: dict[str, Any]) -> dict[str, int]:
 def _index(items: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     indexed: dict[str, dict[str, Any]] = {}
     for item in items:
+        if not isinstance(item, dict):
+            raise ValueError("Cada ítem debe ser un objeto JSON.")
         cid = item.get("category_id")
         if not isinstance(cid, str) or not cid:
             raise ValueError("Cada ítem necesita un 'category_id'.")
@@ -119,21 +131,21 @@ def _index(items: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
 
 
 def _items(value: Any) -> list[dict[str, Any]]:
-    return value["items"] if isinstance(value, dict) else value
+    items = value.get("items") if isinstance(value, dict) else value
+    if not isinstance(items, list):
+        raise ValueError("Se esperaba una lista de ítems o un objeto con 'items'.")
+    return items
 
 
 def evaluate(plan: dict[str, Any]) -> dict[str, Any]:
+    if not isinstance(plan, dict):
+        raise ValueError("Se esperaba un objeto {income, items}.")
     income = _money(plan.get("income"), "income")
-    items = _index(_items(plan)).values()
-    amounts = [_money(i.get("monthly_amount"), "monthly_amount") for i in items]
-    total = sum(amounts)
-    by_pillar: dict[str, int] = {}
-    unclassified = 0
-    for item, amount in zip(items, amounts):
-        if item.get("pillar"):
-            by_pillar[item["pillar"]] = by_pillar.get(item["pillar"], 0) + amount
-        else:
-            unclassified += amount
+    by_pillar: dict[str | None, int] = defaultdict(int)
+    for item in _index(_items(plan)).values():
+        by_pillar[item.get("pillar") or None] += _money(item.get("monthly_amount"), "monthly_amount")
+    unclassified = by_pillar.pop(None, 0)
+    total = sum(by_pillar.values()) + unclassified
 
     def pct(amount: int) -> float:
         return round(100 * amount / income, 1) if income else 0.0
